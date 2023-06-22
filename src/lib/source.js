@@ -14,6 +14,7 @@ export function source(url) {
 		}
 
 		source.onerror = function (event) {
+			source.close()
 			throw new Error(`Could not read source ${url}.`)
 		}
 	})
