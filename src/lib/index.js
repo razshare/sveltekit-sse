@@ -1,2 +1,4 @@
-export { source } from './source'
-export { event } from './event'
+import { source } from './source'
+import { event } from './event'
+
+export { source, event }
