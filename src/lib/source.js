@@ -3,11 +3,15 @@ import { browser } from '$app/environment'
 
 /**
  * Consume a server sent event as a readable store.
+ *
+ * > Note: source values rendered on the server will always be initialized with blank (`''`).
  * @param {string} url path of event source.
- * @returns {import('svelte/store').Readable<string>} source values rendered on the server will always be initialized with blank (`''`).
+ * @returns {import('./index.js').ServerSentEventSource}
  */
 export function source(url) {
-	return readable('', function start(set) {
+	let onError = []
+
+	const store = readable('', function start(set) {
 		if (!browser) {
 			set('')
 		} else {
@@ -17,9 +21,10 @@ export function source(url) {
 				set(event.data)
 			}
 
-			source.onerror = function (_) {
+			source.onerror = function (event) {
 				source.close()
-				throw new Error(`Could not read source ${url}.`)
+				onError.forEach(callback => callback(event))
+				onError = []
 			}
 
 			return function stop() {
@@ -27,4 +32,12 @@ export function source(url) {
 			}
 		}
 	})
+
+	return {
+		subscribe: store.subscribe,
+		onError: function (callback) {
+			onError.push(callback)
+			return this
+		},
+	}
 }

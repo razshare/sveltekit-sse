@@ -36,11 +36,7 @@ and consume it on your client with:
 <script>
 	// src/routes/+page.svelte
 	import { source } from 'sveltekit-server-sent-events'
-	import { onMount } from 'svelte'
-
-	const event = source('/event')
-
-	$:console.log('new value:', $event)
+	const value = source('/event').onError(error => console.error({ error }))
 </script>
-
+{$value}
 ```

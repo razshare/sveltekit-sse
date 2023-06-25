@@ -1,7 +1,6 @@
 <script>
 	import { source } from '$lib/source.js'
-
-	const event = source('/event')
-
-	$: console.log('new value:', $event)
+	const value = source('/event').onError(error => console.error({ error }))
 </script>
+
+{$value}
