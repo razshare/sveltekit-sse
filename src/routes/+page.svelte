@@ -1,12 +1,7 @@
 <script>
 	import { source } from '$lib/source.js'
-	import { onMount } from 'svelte'
 
-	function client() {
-		source('/event').subscribe(data => {
-			console.log({ data })
-		})
-	}
+	const event = source('/event')
 
-	onMount(client)
+	$: console.log('new value:', $event)
 </script>

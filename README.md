@@ -37,13 +37,9 @@ and consume it on your client with:
 	import { source } from 'sveltekit-sse'
 	import { onMount } from 'svelte'
 
-	function client() {
-		source('/event').subscribe(data => {
-			console.log({ data })
-		})
-	}
+	const event = source('/event')
 
-	onMount(client)
+	$:console.log('new value:', $event)
 </script>
 
 ```
