@@ -44,32 +44,3 @@ and consume it on your client with:
 </script>
 
 ```
-
-## Developing
-
-Once you've cloned the project and installed dependencies with `npm install` (or `pnpm install` or `yarn`), start a development server:
-
-```bash
-npm run dev
-
-# or start the server and open the app in a new browser tab
-npm run dev -- --open
-```
-
-Everything inside `src/lib` is part of the library, everything inside `src/routes` is used as a showcase or preview app.
-
-## Building
-
-To build the library:
-
-```bash
-npm run package
-```
-
-To create a production version of the showcase app:
-
-```bash
-npm run build
-```
-
-You can preview the production build with `npm run preview`.
