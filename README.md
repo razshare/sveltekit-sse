@@ -5,14 +5,14 @@ This library provides an easy way to produce and consume server sent events.
 Install with:
 
 ```sh
-npm i -D sveltekit-sse
+npm i -D sveltekit-server-sent-events
 ```
 
 Create your server sent event with:
 
 ```js
 // src/routes/event/+sever.js
-import { event } from 'sveltekit-sse'
+import { event } from 'sveltekit-server-sent-events'
 
 /**
  * @param {number} milliseconds
@@ -35,7 +35,7 @@ and consume it on your client with:
 ```svelte
 <script>
 	// src/routes/+page.svelte
-	import { source } from 'sveltekit-sse'
+	import { source } from 'sveltekit-server-sent-events'
 	import { onMount } from 'svelte'
 
 	const event = source('/event')
