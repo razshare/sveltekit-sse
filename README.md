@@ -34,6 +34,7 @@ and consume it on your client with:
 
 ```svelte
 <script>
+	// src/routes/+page.svelte
 	import { source } from 'sveltekit-sse'
 	import { onMount } from 'svelte'
 
