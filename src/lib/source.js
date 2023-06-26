@@ -10,7 +10,9 @@ import { browser } from '$app/environment'
  */
 export function source(url) {
 	let onError = []
-
+	const options = {
+		reconnect: false,
+	}
 	const store = readable('', function start(set) {
 		if (!browser) {
 			set('')
@@ -22,7 +24,9 @@ export function source(url) {
 			}
 
 			source.onerror = function (event) {
-				source.close()
+				if (!options.reconnect) {
+					source.close()
+				}
 				onError.forEach(callback => callback(event))
 			}
 
@@ -36,6 +40,10 @@ export function source(url) {
 		subscribe: store.subscribe,
 		onError: function (callback) {
 			onError.push(callback)
+			return this
+		},
+		setReconnect: function (reconnect) {
+			options.reconnect = reconnect
 			return this
 		},
 	}
