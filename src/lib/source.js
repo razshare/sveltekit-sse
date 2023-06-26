@@ -24,7 +24,6 @@ export function source(url) {
 			source.onerror = function (event) {
 				source.close()
 				onError.forEach(callback => callback(event))
-				onError = []
 			}
 
 			return function stop() {

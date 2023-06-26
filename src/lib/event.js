@@ -20,15 +20,17 @@ function createPinger(controller) {
 
 /**
  * @param {import("./index.js").Producer} producer
- * @param {function(undefiend|string):void|Promise<void>} onCancel
+ * @param {Array<function(undefiend|string):void|Promise<void>>} onCancel
  */
-function createStream(producer, cancelCallback) {
+function createStream(producer, onCancel) {
 	return new ReadableStream({
 		async start(controller) {
 			await producer(createEmitter(controller), createPinger(controller))
 			controller.close()
 		},
-		cancel: cancelCallback,
+		cancel: function () {
+			onCancel.forEach(callback => callback())
+		},
 	})
 }
 
@@ -37,8 +39,8 @@ function createStream(producer, cancelCallback) {
  * @param {import("./index.js").Producer} producer
  */
 export function event(producer) {
-	/** @type {function(undefiend|string):void|Promise<void>} */
-	let cancelCallback = undefined
+	/** @type {Array<function(undefiend|string):void|Promise<void>>} */
+	const onCancel = []
 	/** @type {Map<string,string>} */
 	const headers = new Map()
 	/** @type undefined|ReadableStream */
@@ -74,7 +76,7 @@ export function event(producer) {
 		 * @returns
 		 */
 		onCancel(callback) {
-			cancelCallback = callback()
+			onCancel.push(callback)
 			return this
 		},
 		/**
@@ -82,7 +84,7 @@ export function event(producer) {
 		 */
 		getStream() {
 			if (!stream) {
-				stream = createStream(producer, cancelCallback)
+				stream = createStream(producer, onCancel)
 			}
 			return stream
 		},
