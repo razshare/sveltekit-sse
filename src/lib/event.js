@@ -56,6 +56,7 @@ export function event(producer) {
 		 * {
 		 *   "Cache-Control": "no-store",
 		 *   "Content-Type": "text/event-stream",
+		 *   "Connection": "keep-alive",
 		 * }
 		 * ```
 		 *
