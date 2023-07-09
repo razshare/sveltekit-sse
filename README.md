@@ -5,7 +5,7 @@ This library provides an easy way to produce and consume server sent events.
 Install with:
 
 ```sh
-npm i -D sveltekit-server-sent-events
+npm i sveltekit-server-sent-events
 ```
 
 Create your server sent event with:
