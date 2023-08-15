@@ -1,5 +1,5 @@
-import { source } from './source'
-import { event } from './event'
+import { source } from './source.js'
+import { event } from './event.js'
 import type { Subscriber, Invalidator, Unsubscriber } from 'svelte/store'
 
 export type Producer = (emit: (data: string) => void, ping: () => void) => void | Promise<void>
