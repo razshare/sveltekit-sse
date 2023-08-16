@@ -9,7 +9,7 @@ npm i -D sveltekit-sse
 ```
 
 > **Warning**\
-> prevously `npm i -D sveltekit-server-sent-events`
+> previously `npm i -D sveltekit-server-sent-events`
 
 Create your server sent event with:
 
