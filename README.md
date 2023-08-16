@@ -8,6 +8,8 @@ Install with:
 npm i -D sveltekit-sse
 ```
 
+> **Warning**: prevously `npm i -D sveltekit-server-sent-events`
+
 Create your server sent event with:
 
 ```js
@@ -41,9 +43,13 @@ and consume it on your client with:
 {$value}
 ```
 
-You can also create multiple events over the same stream.
+## Multiple events.
 
-> **Note**: this is useful if you're not using http2.
+All major browsers will limit the number of parallel http connections.
+
+One solution to this problem is using http2.
+
+However, for various reasons not everyone can serve http2 responses, in that case you can use the same http1 connection to emit multiple events.
 
 ```js
 // src/routes/events/+sever.js
