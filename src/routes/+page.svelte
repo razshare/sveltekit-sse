@@ -1,4 +1,4 @@
-<script lang="ts">
+<script>
 	import { source } from '$lib/source.js'
 	const single = source('/event')
 		.setReconnect(false)

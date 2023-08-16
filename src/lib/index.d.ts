@@ -1,6 +1,5 @@
-import { source } from './source'
-import { event } from './event'
-import { events } from './events'
+import { source } from './source.js'
+import { event } from './event.js'
 import type { Subscriber, Invalidator, Unsubscriber } from 'svelte/store'
 
 export type ProducerOfOneEvent = (emit: (data: string) => void) => void | PromiseLike<void>
@@ -35,4 +34,4 @@ export type ServerSentEventSource = {
 
 type NonEmptyString<T extends string> = '' extends T ? never : T
 
-export { source, event, events }
+export { source, event }
