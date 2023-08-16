@@ -1,4 +1,4 @@
-import { source } from './source'
-import { event } from './event'
+import { source } from './source.js'
+import { event } from './event.js'
 
 export { source, event }
