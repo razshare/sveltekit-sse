@@ -43,7 +43,7 @@ and consume it on your client with:
 {$value}
 ```
 
-## Multiple events.
+## Multiple events
 
 All major browsers will limit the number of parallel http connections.
 
