@@ -1,5 +1,3 @@
-import { id } from './id.js'
-
 /**
  * @param {ReadableStreamDefaultController} controller
  */
