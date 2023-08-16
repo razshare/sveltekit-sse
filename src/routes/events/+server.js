@@ -1,4 +1,4 @@
-import { event } from '$lib/index.js'
+import { events } from '$lib/events.js'
 
 /**
  * @param {number} milliseconds
@@ -7,9 +7,10 @@ import { event } from '$lib/index.js'
 const delay = milliseconds => new Promise(r => setTimeout(r, milliseconds))
 
 export function GET() {
-	return event(async emit => {
+	return events(async emit => {
 		while (true) {
-			emit(`${Date.now()}`)
+			emit('event-1', `hello from event-1: ${Date.now()}`)
+			emit('event-2', `hello from event-2: ${Date.now()}`)
 			await delay(1000)
 		}
 	}).toResponse()

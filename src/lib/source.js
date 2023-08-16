@@ -2,13 +2,25 @@ import { readable } from 'svelte/store'
 import { browser } from '$app/environment'
 
 /**
+ * @type {Map<string, {
+ *		eventSource: EventSource,
+		events: Map<string,boolean>,
+ * }>}
+ * */
+const references = new Map()
+
+/**
  * Consume a server sent event as a readable store.
  *
- * > Note: source values rendered on the server will always be initialized with blank (`''`).
- * @param {string} url path of event source.
+ * > **Note**: calling this using the same `url` string will not create multiple streams, instead the same stream will be reused for all exposed events.
+ *
+ * > **Note**: source values rendered on the server will always be initialized with blank (`''`).
+ * @param {string} url path to the stream.
+ * @param {string} eventName name of the event.
  * @returns {import('./index.js').ServerSentEventSource}
  */
-export function source(url) {
+export function source(url, eventName = 'message') {
+	/** @type {Array<(import('./index.js').ServerSentEventSourceOnError)>} */
 	let onError = []
 	const options = {
 		reconnect: false,
@@ -17,21 +29,40 @@ export function source(url) {
 		if (!browser) {
 			set('')
 		} else {
-			const source = new EventSource(url)
+			const reference = references.get(url) ?? {
+				events: new Map(),
+				eventSource: new EventSource(url),
+			}
 
-			source.onmessage = function (event) {
+			const events = reference.events
+			const eventSource = reference.eventSource
+
+			if (!references.has(url)) {
+				references.set(url, reference)
+			}
+
+			if (!events.has(eventName)) {
+				events.set(eventName, true)
+			}
+
+			eventSource.addEventListener(eventName, function (event) {
 				set(event.data)
-			}
+			})
 
-			source.onerror = function (event) {
+			eventSource.addEventListener('error', function (event) {
 				if (!options.reconnect) {
-					source.close()
+					if (eventSource.readyState !== eventSource.CLOSED) {
+						eventSource.close()
+					}
 				}
-				onError.forEach(callback => callback(event))
-			}
+				onError.forEach(callback => callback(event, eventSource))
+			})
 
 			return function stop() {
-				source.close()
+				events.set(eventName, false)
+				if (eventSource.readyState !== eventSource.CLOSED) {
+					eventSource.close()
+				}
 			}
 		}
 	})

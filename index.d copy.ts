@@ -1,13 +1,11 @@
 import { source } from './source'
 import { event } from './event'
-import { events } from './events'
 import type { Subscriber, Invalidator, Unsubscriber } from 'svelte/store'
 
-export type ProducerOfOneEvent = (emit: (data: string) => void) => void | PromiseLike<void>
-export type ProducerOfManyEvents = (emit: (eventName: string, data: string) => void) => void | PromiseLike<void>
+export type Producer = (emit: (data: string) => void, ping: () => void) => void
 
 export type ServerSentEventSourceOnError = (
-	callback: (event: MessageEvent, source: EventSource) => void | PromiseLike<void>
+	callback: (event: MessageEvent, source: EventSource) => void
 ) => ServerSentEventSource
 
 export type ServerSentEventSourceSubscribe = (
@@ -35,4 +33,4 @@ export type ServerSentEventSource = {
 
 type NonEmptyString<T extends string> = '' extends T ? never : T
 
-export { source, event, events, NonEmptyString }
+export { source, event, NonEmptyString }
