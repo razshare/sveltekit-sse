@@ -9,7 +9,7 @@ const delay = milliseconds => new Promise(r => setTimeout(r, milliseconds))
 export function GET() {
 	return event(async emit => {
 		while (true) {
-			emit(`${Date.now()}`)
+			emit(`/event says: ${Date.now()}`)
 			await delay(1000)
 		}
 	}).toResponse()
