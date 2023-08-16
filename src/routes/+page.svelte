@@ -1,21 +1,19 @@
-<script>
+<script lang="ts">
 	import { source } from '$lib/source.js'
-	const single = source('/event')
-		.setReconnect(false)
-		.onError(error => console.error({ error }))
-	const multiple1 = source('/events', 'event-1')
-		.setReconnect(false)
-		.onError(error => console.error({ error }))
-	const multiple2 = source('/events', 'event-2')
-		.setReconnect(false)
-		.onError(error => console.error({ error }))
+
+	const connection1 = source('/event')
+	const single1 = connection1.select('message')
+
+	const connection2 = source('/events')
+	const multiple1 = connection2.select('event-1')
+	const multiple2 = connection2.select('event-2')
+	const multiple3 = connection2.select('event-3')
 </script>
 
-<span>single event</span>
-{$single}
-<hr />
-<span>multiple events (1)</span>
-{$multiple1}
+<h3>1 strea & 1 event</h3>
+{$single1}
 <br />
-<span>multiple events (2)</span>
-{$multiple2}
+<h3>1 stream & 3 events</h3>
+{$multiple1}<br />
+{$multiple2}<br />
+{$multiple3}<br />

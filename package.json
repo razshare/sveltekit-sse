@@ -1,5 +1,5 @@
 {
-	"name": "sveltekit-server-sent-events",
+	"name": "sveltekit-sse",
 	"version": "0.2.0",
 	"scripts": {
 		"dev": "vite dev",

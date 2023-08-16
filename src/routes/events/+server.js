@@ -9,8 +9,10 @@ const delay = milliseconds => new Promise(r => setTimeout(r, milliseconds))
 export function GET() {
 	return events(async emit => {
 		while (true) {
-			emit('event-1', `hello from event-1: ${Date.now()}`)
-			emit('event-2', `hello from event-2: ${Date.now()}`)
+			// TODO: work on intellisense for `emit`
+			emit('event-1', `/events (1) says: ${Date.now()}`)
+			emit('event-2', `/events (2) says: ${Date.now()}`)
+			emit('event-3', `/events (3) says: ${Date.now()}`)
 			await delay(2000)
 		}
 	}).toResponse()
