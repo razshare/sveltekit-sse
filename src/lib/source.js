@@ -12,7 +12,7 @@ const references = new Map()
 /**
  * Consume a server sent event as a readable store.
  *
- * > **Note**: calling this using the same `url` string will not create multiple streams, instead the same stream will be reused for all exposed events.
+ * > **Note**: calling this multiple times using the same `url` string will not create multiple streams, instead the same stream will be reused for all exposed events on the given `url`.
  *
  * > **Note**: source values rendered on the server will always be initialized with blank (`''`).
  * @param {string} url path to the stream.

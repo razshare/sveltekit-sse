@@ -11,7 +11,7 @@ export function GET() {
 		while (true) {
 			emit('event-1', `hello from event-1: ${Date.now()}`)
 			emit('event-2', `hello from event-2: ${Date.now()}`)
-			await delay(1000)
+			await delay(2000)
 		}
 	}).toResponse()
 }

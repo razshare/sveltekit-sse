@@ -1,6 +1,6 @@
 {
 	"name": "sveltekit-server-sent-events",
-	"version": "0.1.3",
+	"version": "0.2.0",
 	"scripts": {
 		"dev": "vite dev",
 		"build": "vite build && npm run package",

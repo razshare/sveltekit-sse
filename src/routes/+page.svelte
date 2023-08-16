@@ -1,13 +1,13 @@
 <script lang="ts">
 	import { source } from '$lib/source.js'
 	const single = source('/event')
-		.setReconnect(true)
+		.setReconnect(false)
 		.onError(error => console.error({ error }))
 	const multiple1 = source('/events', 'event-1')
-		.setReconnect(true)
+		.setReconnect(false)
 		.onError(error => console.error({ error }))
 	const multiple2 = source('/events', 'event-2')
-		.setReconnect(true)
+		.setReconnect(false)
 		.onError(error => console.error({ error }))
 </script>
 

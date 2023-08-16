@@ -4,11 +4,12 @@ import { id } from './id.js'
  * @param {ReadableStreamDefaultController} controller
  */
 function createEmitter(controller) {
-	const eventId = `id: ${id()}`
+	let id = 1
 	/** @type {function(string):void} */
 	return function (eventName, data) {
-		const payload = `${eventId}\nevent: ${eventName}\ndata: ${data}\n\n`
+		const payload = `id: ${id}\nevent: ${eventName}\ndata: ${data}\n\n`
 		controller.enqueue(payload)
+		id++
 	}
 }
 

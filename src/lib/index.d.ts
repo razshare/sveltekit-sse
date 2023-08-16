@@ -35,4 +35,4 @@ export type ServerSentEventSource = {
 
 type NonEmptyString<T extends string> = '' extends T ? never : T
 
-export { source, event, events, NonEmptyString }
+export { source, event, events }
