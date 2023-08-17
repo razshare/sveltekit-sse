@@ -79,7 +79,7 @@ and consume it on your client with:
 
 ```svelte
 <script>
-	import { events } from 'sveltekit-sse'
+	import { source } from 'sveltekit-sse'
 	
 	const connection = source('/events')
 	const value1 = connection.select('event-1')
