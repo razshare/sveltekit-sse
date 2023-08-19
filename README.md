@@ -9,12 +9,12 @@ npm i -D sveltekit-sse
 ```
 
 > **Warning**\
-> prevously `npm i -D sveltekit-server-sent-events`
+> previously `npm i -D sveltekit-server-sent-events`
 
 Create your server sent event with:
 
 ```js
-// src/routes/event/+sever.js
+// src/routes/event/+server.js
 import { event } from 'sveltekit-sse'
 
 /**
@@ -26,7 +26,7 @@ const delay = milliseconds => new Promise(r => setTimeout(r, milliseconds))
 export function GET() {
 	return event(async emit => {
 		while (true) {
-			emit(Date.now())
+			emit(`${Date.now()}`)
 			await delay(1000)
 		}
 	}).toResponse()
@@ -53,7 +53,7 @@ One solution to this problem is using http2.
 However, for various reasons not everyone can serve http2 responses, in that case you can use the same http1 connection to emit multiple events.
 
 ```js
-// src/routes/events/+sever.js
+// src/routes/events/+server.js
 import { events } from 'sveltekit-sse'
 
 /**
@@ -79,7 +79,7 @@ and consume it on your client with:
 
 ```svelte
 <script>
-	import { events } from 'sveltekit-sse'
+	import { source } from 'sveltekit-sse'
 	
 	const connection = source('/events')
 	const value1 = connection.select('event-1')
