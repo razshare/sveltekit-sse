@@ -14,7 +14,7 @@ npm i -D sveltekit-sse
 Create your server sent event with:
 
 ```js
-// src/routes/event/+sever.js
+// src/routes/event/+server.js
 import { event } from 'sveltekit-sse'
 
 /**
@@ -53,7 +53,7 @@ One solution to this problem is using http2.
 However, for various reasons not everyone can serve http2 responses, in that case you can use the same http1 connection to emit multiple events.
 
 ```js
-// src/routes/events/+sever.js
+// src/routes/events/+server.js
 import { events } from 'sveltekit-sse'
 
 /**
