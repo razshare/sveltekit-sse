@@ -24,22 +24,23 @@ import { event } from 'sveltekit-sse'
 const delay = milliseconds => new Promise(r => setTimeout(r, milliseconds))
 
 export function GET() {
-	return event(async emit => {
-		while (true) {
-			emit(`${Date.now()}`)
-			await delay(1000)
-		}
-	}).toResponse()
+  return event(async emit => {
+    while (true) {
+      emit(`${Date.now()}`)
+      await delay(1000)
+    }
+  }).toResponse()
 }
+
 ```
 
 and consume it on your client with:
 
 ```svelte
 <script>
-	// src/routes/+page.svelte
-	import { source } from 'sveltekit-sse'
-	const value = source('/custom-event').onError(event => console.error({ event }))
+  // src/routes/+page.svelte
+  import { source } from 'sveltekit-sse'
+  const value = source('/custom-event').onError(event => console.error({ event }))
 </script>
 {$value}
 ```
@@ -63,33 +64,33 @@ import { events } from 'sveltekit-sse'
 const delay = milliseconds => new Promise(r => setTimeout(r, milliseconds))
 
 export function GET() {
-	return events(async emit => {
-		while (true) {
-			emit('event-1', `/events (1) says: ${Date.now()}`)
-			emit('event-2', `/events (2) says: ${Date.now()}`)
-			emit('event-3', `/events (3) says: ${Date.now()}`)
-			await delay(2000)
-		}
-	}).toResponse()
+  return events(async emit => {
+    while (true) {
+      emit('event-1', `/events (1) says: ${Date.now()}`)
+      emit('event-2', `/events (2) says: ${Date.now()}`)
+      emit('event-3', `/events (3) says: ${Date.now()}`)
+      await delay(2000)
+    }
+  }).toResponse()
 }
-
 ```
 
 and consume it on your client with:
 
 ```svelte
 <script>
-	import { source } from 'sveltekit-sse'
-	
-	const connection = source('/events')
-	const value1 = connection.select('event-1')
-	const value2 = connection.select('event-2')
-	const value3 = connection.select('event-3')
+  import { source } from 'sveltekit-sse'
+
+  const connection = source('/events')
+  const value1 = connection.select('event-1')
+  const value2 = connection.select('event-2')
+  const value3 = connection.select('event-3')
 </script>
+
 {$value1}
-<br/>
+<br />
 {$value2}
-<br/>
+<br />
 {$value3}
 ```
 
