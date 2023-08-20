@@ -97,7 +97,7 @@ and consume it on your client with:
 
 While on the client, you can transform the stream into any type of object you want by using `source::select::transform`.
 
-The `transform method` receives a `ReadableStream`, which will stream the event messages.
+The `transform` method receives a `ReadableStream`, which you can use to read incoming messages from the source.
 
 Here's an example how to use it.
 
