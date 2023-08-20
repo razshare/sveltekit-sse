@@ -2,12 +2,6 @@
   import { source } from '$lib/source.js'
 
   const connection1 = source('/custom-event')
-  const single1 = connection1.select('message')
-
-  const connection2 = source('/events')
-  const multiple1 = connection2.select('event-1')
-  const multiple2 = connection2.select('event-2')
-  const multiple3 = connection2.select('event-3')
 
   const transformed1 = single1.transform(stream => {
     let state = {
@@ -40,6 +34,13 @@
   transformed1.subscribe(value => {
     console.log({ value })
   })
+
+  const single1 = connection1.select('message')
+
+  const connection2 = source('/events')
+  const multiple1 = connection2.select('event-1')
+  const multiple2 = connection2.select('event-2')
+  const multiple3 = connection2.select('event-3')
 </script>
 
 <h3>1 strea & 1 event</h3>
