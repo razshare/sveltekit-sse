@@ -14,7 +14,7 @@ npm i -D sveltekit-sse
 Create your server sent event with:
 
 ```js
-// src/routes/event/+server.js
+// src/routes/custom-event/+server.js
 import { event } from 'sveltekit-sse'
 
 /**
@@ -39,7 +39,7 @@ and consume it on your client with:
 <script>
 	// src/routes/+page.svelte
 	import { source } from 'sveltekit-sse'
-	const value = source('/event').onError(event => console.error({ event }))
+	const value = source('/custom-event').onError(event => console.error({ event }))
 </script>
 {$value}
 ```
@@ -91,4 +91,53 @@ and consume it on your client with:
 {$value2}
 <br/>
 {$value3}
+```
+
+## Transform
+
+While on the client, you can transform the stream into any type of object you want by using `source::select::transform`.
+
+The `transform method` receives a `ReadableStream`, which will stream the event messages.
+
+Here's an example how to use it.
+
+```svelte
+<script>
+  import { source } from '$lib/source.js'
+
+  const connection1 = source('/custom-event')
+  const single1 = connection1.select('message')
+
+  const transformed1 = single1.transform(stream => {
+    let state = {
+      /** @type {Array<function(string):void>}*/
+      listeners: [],
+    }
+    const reader = stream.getReader()
+    const store = {
+      subscribe(callback) {
+        if (!state.listeners.includes(callback)) {
+          state.listeners.push(callback)
+        }
+
+        return () => (state.listeners = state.listeners.filter(value => value !== callback))
+      },
+    }
+
+    const start = async function () {
+      let value = ''
+      while (({ value } = await reader.read())) {
+        state.listeners.forEach(callback => callback(value))
+      }
+    }
+
+    start()
+
+    return store
+  })
+
+  transformed1.subscribe(value => {
+    console.log({ value })
+  })
+</script>
 ```
