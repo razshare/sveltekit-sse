@@ -39,7 +39,7 @@ and consume it on your client with:
 <script>
 	// src/routes/+page.svelte
 	import { source } from 'sveltekit-sse'
-	const value = source('/event').onError(error => console.error({ error }))
+	const value = source('/event').onError(event => console.error({ event }))
 </script>
 {$value}
 ```

@@ -9,7 +9,7 @@
 	"svelteStrictMode": false,
 	"svelteBracketNewLine": true,
 	"svelteIndentScriptAndStyle": true,
-	"useTabs": true,
+	"useTabs": false,
 	"pluginSearchDirs": ["."],
 	"overrides": [{ "files": "*.svelte", "options": { "parser": "svelte" } }]
 }

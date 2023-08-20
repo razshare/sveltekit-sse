@@ -7,5 +7,5 @@ import { events } from './events.js'
  * @param {import('./events.js').ProducerOfOneEvent} producer
  */
 export function event(producer) {
-	return events(emit => producer(data => emit('message', data)))
+  return events(emit => producer(data => emit('message', data)))
 }
