@@ -104,7 +104,7 @@ Here's an example how to use it.
 
 ```svelte
 <script>
-  import { source } from '$lib/source.js'
+  import { source } from 'sveltekit-sse'
 
   const connection1 = source('/custom-event')
   const single1 = connection1.select('message')
