@@ -43,7 +43,7 @@ function createEmitter(controller) {
       throw new Error(`Event data must of type \`string\`, received \`${typeOfData}\`.`)
     }
     const payload = `id: ${id}\nevent: ${eventName}\ndata: ${data}\n\n`
-    controller.enqueue(payload)
+    controller.enqueue(new TextEncoder().encode(payload))
     id++
   }
 }
