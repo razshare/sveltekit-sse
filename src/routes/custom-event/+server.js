@@ -7,6 +7,7 @@ import { event } from '$lib/event.js'
 const delay = milliseconds => new Promise(r => setTimeout(r, milliseconds))
 
 export function GET() {
+  console.log('test')
   return event(async emit => {
     while (true) {
       // emit(`/custom-event says: ${Date.now()}`)

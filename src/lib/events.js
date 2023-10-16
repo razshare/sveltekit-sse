@@ -51,13 +51,14 @@ function createEmitter(controller) {
 
 /**
  * @callback OnCancelCallback
- * @param {ReadableStream} stream
+ * @param {UnderlyingDefaultSource<string>} stream
  * @returns {void|PromiseLike<void>}
  */
 
 /**
  * @param {ProducerOfManyEvents} producer
  * @param {Array<OnCancelCallback>} onCancel
+ * @returns {ReadableStream<string>}
  */
 function createStream(producer, onCancel) {
   return new ReadableStream({
@@ -67,8 +68,9 @@ function createStream(producer, onCancel) {
       controller.close()
     },
     async cancel() {
+      const self = this
       for (const callback of onCancel) {
-        await callback(this)
+        await callback(self)
       }
     },
   })
@@ -79,9 +81,9 @@ function createStream(producer, onCancel) {
  * @param {ProducerOfManyEvents} producer
  */
 export function events(producer) {
-  /** @type {Array<function(string):void|PromiseLike<void>>} */
+  /** @type {Array<OnCancelCallback>} */
   const onCancel = []
-  /** @type {Map<string,string>} */
+  /** @type {Map<string, string>} */
   const headers = new Map()
   /** @type undefined|ReadableStream */
   let stream = undefined
@@ -133,6 +135,7 @@ export function events(producer) {
      */
     toResponse() {
       return new Response(this.getStream(), {
+        //@ts-ignore
         headers: {
           'Cache-Control': 'no-store',
           'Content-Type': 'text/event-stream',

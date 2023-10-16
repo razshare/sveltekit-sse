@@ -3,33 +3,46 @@
 
   const connection1 = source('/custom-event')
   const single1 = connection1.select('message')
-  const transformed1 = single1.transform(stream => {
-    let state = {
-      /** @type {Array<function(string):void>}*/
-      listeners: [],
-    }
-    const reader = stream.getReader()
-    const store = {
-      subscribe(callback) {
-        if (!state.listeners.includes(callback)) {
-          state.listeners.push(callback)
-        }
-
-        return () => (state.listeners = state.listeners.filter(value => value !== callback))
-      },
-    }
-
-    const start = async function () {
-      let value = ''
-      while (({ value } = await reader.read())) {
-        state.listeners.forEach(callback => callback(value))
+  const transformed1 = single1.transform(
+    /**
+     *
+     * @param {ReadableStream<string>} stream
+     */
+    function (stream) {
+      let state = {
+        /** @type {Array<function(string):void>}*/
+        listeners: [],
       }
+      const reader = stream.getReader()
+      const store = {
+        /**
+         *
+         * @param {function(string):void} callback
+         */
+        subscribe(callback) {
+          if (!state.listeners.includes(callback)) {
+            state.listeners.push(callback)
+          }
+
+          return () => (state.listeners = state.listeners.filter(value => value !== callback))
+        },
+      }
+
+      const start = async function () {
+        /**
+         * @type {ReadableStreamReadResult<string>}
+         */
+        let chunk
+        while ((chunk = await reader.read())) {
+          state.listeners.forEach(callback => callback(chunk.value ?? ''))
+        }
+      }
+
+      start()
+
+      return store
     }
-
-    start()
-
-    return store
-  })
+  )
 
   transformed1.subscribe(value => {
     console.log({ value })

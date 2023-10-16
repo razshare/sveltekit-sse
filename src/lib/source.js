@@ -25,8 +25,8 @@ function exists(url) {
  * @param {string} url path to the stream.
  */
 function disconnect(url) {
-  if (references.has(url)) {
-    const reference = references.get(url)
+  const reference = references.get(url)
+  if (reference) {
     const { eventSource } = reference
     if (eventSource.readyState !== eventSource.CLOSED) {
       reference.eventSource.close()
@@ -59,9 +59,13 @@ function connect(url) {
   }
 
   const cachedReference = references.get(url)
+  if (!cachedReference) {
+    throw new Error(`Could not find reference for ${url}.`)
+  }
+
   const { eventSource } = cachedReference
 
-  if (eventSource === eventSource.CLOSED) {
+  if (eventSource.readyState === eventSource.CLOSED) {
     // const reconnectedEventSource = new EventSource(url)
     const freshReference = {
       eventSource,
@@ -89,12 +93,16 @@ function connect(url) {
 /**
  * @param {string} url
  * @param {string} eventName
- * @param {Map<string>} readables
+ * @param {Map<string, import('svelte/store').Readable<string>>} readables
  * @param {SourceState} state
  */
 function createStore(url, eventName, readables, state) {
   const { eventSource } = connect(url)
   return readable('', function (set) {
+    /**
+     *
+     * @param {MessageEvent<string>} event
+     */
     const listener = function (event) {
       set(event.data)
     }
@@ -110,13 +118,37 @@ function createStore(url, eventName, readables, state) {
   })
 }
 
+/**
+ * @template To
+ * @callback TransformerCallback
+ * @param {ReadableStream<string>} stream
+ * @returns {import('svelte/store').Readable<To>}
+ */
+
+/**
+ * @param {string} url
+ * @param {string} eventName
+ */
 function createTransformer(url, eventName) {
+  /**
+   * @template To
+   * @param {TransformerCallback<To>} callback
+   */
   return function (callback) {
     if (!browser) {
-      return readable('')
+      /**
+       * @type {To}
+       */
+      //@ts-ignore
+      const data = ''
+
+      return readable(data)
     }
 
     const { eventSource } = connect(url)
+    /**
+     * @type {ReadableStream<string>}
+     */
     const readableStream = new ReadableStream({
       start: function (controller) {
         eventSource.addEventListener(eventName, function (event) {
@@ -128,6 +160,18 @@ function createTransformer(url, eventName) {
     return callback(readableStream)
   }
 }
+
+/**
+ * @callback OnErrorCallback
+ * @param {Event} event
+ * @returns {ReturnType<source>}
+ */
+
+/**
+ * @callback SubscriberCallback
+ * @param {string} payload
+ * @returns {void}
+ */
 
 /**
  * Consume a server sent event as a readable store.
@@ -149,13 +193,14 @@ export function source(url) {
   return {
     /**
      * Close the source connection.
+     * @returns {void}
      */
     close() {
       disconnect(url)
     },
     /**
      * Subscribe to the default `message` event.
-     * @property {function(string):void} callback
+     * @param {SubscriberCallback} callback
      * @throws when Subscribing callback is not of type `function`.
      */
     subscribe(callback) {
@@ -168,13 +213,25 @@ export function source(url) {
       }
 
       if (!readables.has('message')) {
-        readables.set('message', createStore(url, 'message', state))
+        readables.set('message', createStore(url, 'message', readables, state))
       }
 
       state.eventsCounter++
 
-      return readables.get('message').subscribe(callback)
+      const message = readables.get('message')
+
+      if (!message) {
+        throw new Error('Could not find message.')
+      }
+
+      return message.subscribe(callback)
     },
+    /**
+     * Invoke `callback` whenever an error occurs.
+     * @param {OnErrorCallback} callback
+     * @returns {ReturnType<source>}
+     * @throws when `callback` is not of type `function`.
+     */
     onError(callback) {
       if (!browser) {
         return this
@@ -194,7 +251,8 @@ export function source(url) {
     },
     /**
      * Wether or not to allow the source to reconnect when an error occurs.
-     * @property {boolean} reconnect if set to true, the underlying `EventSource` will attempt to reconnect, otherwise the source will be closed immediately after the first error occurs.
+     * @param {boolean} value if set to true, the underlying `EventSource` will attempt to reconnect, otherwise the source will be closed immediately after the first error occurs.
+     * @returns {ReturnType<source>}
      * @throws when `reconnect` is not of type `boolean`.
      * @deprecated use `setReconnectOnError` instead. This name is missleading as this parameter does not affect the reconnection behaviour whenever the connection ends with success.
      *
@@ -202,10 +260,12 @@ export function source(url) {
      */
     setReconnect(value) {
       this.setReconnectOnError(value)
+      return this
     },
     /**
      * Wether or not to allow the source to reconnect when an error occurs.
-     * @param reconnect if set to true, the underlying `EventSource` will attempt to reconnect, otherwise the source will be closed immediately after the first error occurs.
+     * @param {boolean} value if set to true, the underlying `EventSource` will attempt to reconnect, otherwise the source will be closed immediately after the first error occurs.
+     * @returns {ReturnType<source>}
      * @throws when `reconnect` is not of type `boolean`.
      */
     setReconnectOnError(value) {
@@ -220,12 +280,21 @@ export function source(url) {
      * Select an event from the stream.
      * @param {string} eventName name of the event
      * @throws when `eventName` is not of type `string`.
+     * @throws when event `eventName` is not found.
      */
     select(eventName) {
       if (!browser) {
         return {
-          ...readable(''),
+          subscribe: readable('').subscribe,
+          /**
+           *
+           * Transform the stream into a readable store.
+           * @template To
+           * @param {TransformerCallback<To>} callack
+           * @returns {import('svelte/motion').Readable<To>}
+           */
           transform(callack) {
+            // @ts-ignore
             return readable('')
           },
         }
@@ -241,20 +310,22 @@ export function source(url) {
 
       state.eventsCounter++
 
+      const event = readables.get(eventName)
+
+      if (!event) {
+        throw new Error(`Could not find event ${eventName}.`)
+      }
+
       return {
-        subscribe: readables.get(eventName).subscribe,
+        subscribe: event.subscribe,
         /**
-         * Transform a readable stream to a readable store.
-         * @template T
-         * @param {function(ReadableStream<string>):T} callback
+         * Transform the stream into a readable store.
          */
         transform: createTransformer(url, eventName),
       }
     },
     /**
-     * Transform a readable stream to a readable store.
-     * @template T
-     * @param {function(ReadableStream<string>):T} callback
+     * Transform the stream into a readable store.
      */
     transform: createTransformer(url, 'message'),
   }
