@@ -164,13 +164,13 @@ function createTransformer(url, eventName) {
 /**
  * @callback OnErrorCallback
  * @param {Event} event
- * @returns {ReturnType<source>}
+ * @returns {void|PromiseLike<void>}
  */
 
 /**
  * @callback SubscriberCallback
  * @param {string} payload
- * @returns {void}
+ * @returns {void|PromiseLike<void>}
  */
 
 /**
