@@ -108,6 +108,7 @@ export function events(producer) {
      * Overwriting header `Content-Type` to something other than `text/event-stream` will break the SSE contract and the event will stop working as intended.
      * @param {string} key
      * @param {string} value
+     * @returns {ReturnType<events>}
      */
     setHeader(key, value) {
       headers.set(key, value)
@@ -116,6 +117,7 @@ export function events(producer) {
     /**
      * Do something after the stream has been canceled.
      * @param {OnCancelCallback} callback
+     * @returns {ReturnType<events>}
      */
     onCancel(callback) {
       onCancel.push(callback)
@@ -123,6 +125,7 @@ export function events(producer) {
     },
     /**
      * Get the underlying stream used by the event.
+     * @returns {ReadableStream<string>}
      */
     getStream() {
       if (!stream) {
@@ -132,6 +135,7 @@ export function events(producer) {
     },
     /**
      * Build a `Response`.
+     * @returns {Response}
      */
     toResponse() {
       return new Response(this.getStream(), {

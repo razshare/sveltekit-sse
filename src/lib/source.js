@@ -16,9 +16,9 @@ const references = new Map()
  *
  * @param {string} url path to the stream.
  */
-function exists(url) {
-  return references.has(url)
-}
+// function exists(url) {
+//   return references.has(url)
+// }
 
 /**
  *
@@ -293,6 +293,7 @@ export function source(url) {
            * @param {TransformerCallback<To>} callack
            * @returns {import('svelte/motion').Readable<To>}
            */
+          // eslint-disable-next-line no-unused-vars
           transform(callack) {
             // @ts-ignore
             return readable('')
