@@ -3,12 +3,11 @@
 
   const connection1 = source('/custom-event')
   connection1.onclose(function run(event) {
-    debugger
-    console.log({ event })
+    console.log('stream closed', event)
   })
   setTimeout(function run() {
     connection1.close()
-  }, 3000)
+  }, 5000)
   const single1 = connection1.select('message')
   const transformed1 = single1.transform(
     /**
