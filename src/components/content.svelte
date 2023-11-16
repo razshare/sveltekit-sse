@@ -8,7 +8,7 @@
      *
      * @param {ReadableStream<string>} stream
      */
-    function (stream) {
+    function run(stream) {
       let state = {
         /** @type {Array<function(string):void>}*/
         listeners: [],
@@ -24,27 +24,33 @@
             state.listeners.push(callback)
           }
 
-          return () => (state.listeners = state.listeners.filter(value => value !== callback))
+          return function stop() {
+            state.listeners = state.listeners.filter(function pass(value) {
+              return value !== callback
+            })
+          }
         },
       }
 
-      const start = async function () {
+      const start = async function run() {
         /**
          * @type {ReadableStreamReadResult<string>}
          */
         let chunk
         while ((chunk = await reader.read())) {
-          state.listeners.forEach(callback => callback(chunk.value ?? ''))
+          state.listeners.forEach(function pass(callback) {
+            callback(chunk.value ?? '')
+          })
         }
       }
 
       start()
 
       return store
-    }
+    },
   )
 
-  transformed1.subscribe(value => {
+  transformed1.subscribe(function watch(value) {
     console.log({ value })
   })
 
@@ -55,9 +61,12 @@
 </script>
 
 <h3>1 strea & 1 event</h3>
-{$single1}
+<pre>{$single1}</pre>
 <br />
 <h3>1 stream & 3 events</h3>
-{$multiple1}<br />
-{$multiple2}<br />
-{$multiple3}<br />
+<pre>{$multiple1}</pre>
+<br />
+<pre>{$multiple2}</pre>
+<br />
+<pre>{$multiple3}</pre>
+<br />

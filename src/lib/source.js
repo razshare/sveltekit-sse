@@ -1,9 +1,10 @@
 import { readable } from 'svelte/store'
 import { browser } from '$app/environment'
+import { CLOSED, stream } from './stream'
 
 /**
  * @typedef Reference
- * @property {EventSource} eventSource,
+ * @property {ReturnType<stream>} eventSource,
  * @property {number} connectionsCounter,
  */
 
@@ -16,19 +17,13 @@ const references = new Map()
  *
  * @param {string} url path to the stream.
  */
-// function exists(url) {
-//   return references.has(url)
-// }
-
-/**
- *
- * @param {string} url path to the stream.
- */
-function disconnect(url) {
+async function disconnect(url) {
   const reference = references.get(url)
   if (reference) {
     const { eventSource } = reference
-    if (eventSource.readyState !== eventSource.CLOSED) {
+
+    if (eventSource.readyState !== CLOSED) {
+      // await reference.eventSource.close()
       reference.eventSource.close()
     }
     reference.connectionsCounter--
@@ -46,10 +41,11 @@ function disconnect(url) {
 /**
  *
  * @param {string} url path to the stream.
+ * @param {false|RequestInit} [options]
  */
-function connect(url) {
+function connect(url, options = false) {
   if (!references.has(url)) {
-    const eventSource = new EventSource(url)
+    const eventSource = stream(url, options)
     const freshReference = {
       eventSource,
       connectionsCounter: 0,
@@ -65,7 +61,7 @@ function connect(url) {
 
   const { eventSource } = cachedReference
 
-  if (eventSource.readyState === eventSource.CLOSED) {
+  if (eventSource.readyState === CLOSED) {
     // const reconnectedEventSource = new EventSource(url)
     const freshReference = {
       eventSource,
@@ -98,20 +94,20 @@ function connect(url) {
  */
 function createStore(url, eventName, readables, state) {
   const { eventSource } = connect(url)
-  return readable('', function (set) {
+  return readable('', function start(set) {
     /**
      *
-     * @param {MessageEvent<string>} event
+     * @param {import('./stream').HttpStreamEvent} event
      */
-    const listener = function (event) {
+    const listener = function run(event) {
       set(event.data)
     }
 
     eventSource.addEventListener(eventName, listener)
 
-    return function stop() {
+    return async function stop() {
       state.eventsCounter--
-      disconnect(url)
+      await disconnect(url)
       eventSource.removeEventListener(eventName, listener)
       readables.delete(eventName)
     }
@@ -134,7 +130,7 @@ function createTransformer(url, eventName) {
    * @template To
    * @param {TransformerCallback<To>} callback
    */
-  return function (callback) {
+  return function transform(callback) {
     if (!browser) {
       /**
        * @type {To}
@@ -150,8 +146,8 @@ function createTransformer(url, eventName) {
      * @type {ReadableStream<string>}
      */
     const readableStream = new ReadableStream({
-      start: function (controller) {
-        eventSource.addEventListener(eventName, function (event) {
+      start(controller) {
+        eventSource.addEventListener(eventName, function run(event) {
           controller.enqueue(event.data)
         })
       },
@@ -193,10 +189,10 @@ export function source(url) {
   return {
     /**
      * Close the source connection.
-     * @returns {void}
+     * @returns {Promise<void>}
      */
     close() {
-      disconnect(url)
+      return disconnect(url)
     },
     /**
      * Subscribe to the default `message` event.
@@ -209,7 +205,9 @@ export function source(url) {
       }
       const typeOfValue = typeof callback
       if (typeOfValue !== 'function') {
-        throw new Error(`Subscribing callback must be of type \`function\`, received \`${typeOfValue}\`.`)
+        throw new Error(
+          `Subscribing callback must be of type \`function\`, received \`${typeOfValue}\`.`,
+        )
       }
 
       if (!readables.has('message')) {
@@ -228,7 +226,7 @@ export function source(url) {
     },
     /**
      * Invoke `callback` whenever an error occurs.
-     * @param {OnErrorCallback} callback
+     * @param {import('./stream').HttpEventCallback} callback
      * @returns {ReturnType<source>}
      * @throws when `callback` is not of type `function`.
      */
@@ -238,42 +236,17 @@ export function source(url) {
       }
       const typeOfValue = typeof callback
       if (typeOfValue !== 'function') {
-        throw new Error(`Error callback must be of type \`function\`, received \`${typeOfValue}\`.`)
+        throw new Error(
+          `Error callback must be of type \`function\`, received \`${typeOfValue}\`.`,
+        )
       }
       const { eventSource } = connect(url)
-      eventSource.onerror = function (event) {
+      eventSource.onerror = function run(event) {
         if (!reconnect) {
           disconnect(url)
         }
         callback(event)
       }
-      return this
-    },
-    /**
-     * Wether or not to allow the source to reconnect when an error occurs.
-     * @param {boolean} value if set to true, the underlying `EventSource` will attempt to reconnect, otherwise the source will be closed immediately after the first error occurs.
-     * @returns {ReturnType<source>}
-     * @throws when `reconnect` is not of type `boolean`.
-     * @deprecated use `setReconnectOnError` instead. This name is missleading as this parameter does not affect the reconnection behaviour whenever the connection ends with success.
-     *
-     * If the connection ends without any errors, the `EventSource` will keep reconnecting afterwards.
-     */
-    setReconnect(value) {
-      this.setReconnectOnError(value)
-      return this
-    },
-    /**
-     * Wether or not to allow the source to reconnect when an error occurs.
-     * @param {boolean} value if set to true, the underlying `EventSource` will attempt to reconnect, otherwise the source will be closed immediately after the first error occurs.
-     * @returns {ReturnType<source>}
-     * @throws when `reconnect` is not of type `boolean`.
-     */
-    setReconnectOnError(value) {
-      const typeOfValue = typeof value
-      if (typeOfValue !== 'boolean') {
-        throw new Error(`Reconnect value must be of type \`boolean\`, received \`${typeOfValue}\`.`)
-      }
-      reconnect = value
       return this
     },
     /**
@@ -290,11 +263,11 @@ export function source(url) {
            *
            * Transform the stream into a readable store.
            * @template To
-           * @param {TransformerCallback<To>} callack
+           * @param {TransformerCallback<To>} callback
            * @returns {import('svelte/motion').Readable<To>}
            */
-          // eslint-disable-next-line no-unused-vars
-          transform(callack) {
+          transform(callback) {
+            callback
             // @ts-ignore
             return readable('')
           },
@@ -302,7 +275,9 @@ export function source(url) {
       }
       const typeOfValue = typeof eventName
       if (typeOfValue !== 'string') {
-        throw new Error(`Event name must be of type \`string\`, received \`${typeOfValue}\`.`)
+        throw new Error(
+          `Event name must be of type \`string\`, received \`${typeOfValue}\`.`,
+        )
       }
 
       if (!readables.has(eventName)) {

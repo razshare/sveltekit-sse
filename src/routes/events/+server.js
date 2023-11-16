@@ -4,15 +4,22 @@ import { events } from '$lib/events.js'
  * @param {number} milliseconds
  * @returns
  */
-const delay = milliseconds => new Promise(r => setTimeout(r, milliseconds))
+const delay = function run(milliseconds) {
+  return new Promise(function run(r) {
+    return setTimeout(r, milliseconds)
+  })
+}
 
 export function GET() {
-  return events(async emit => {
+  return events(async function run(emit) {
+    // eslint-disable-next-line no-constant-condition
     while (true) {
-      emit('event-1', `/events (1) says: ${Date.now()}`)
-      emit('event-2', `/events (2) says: ${Date.now()}`)
-      emit('event-3', `/events (3) says: ${Date.now()}`)
-      await delay(2000)
+      emit('event-1', `/events (1) says\n ${Date.now()}`)
+      await delay(1000)
+      emit('event-2', `/events (2) says\n ${Date.now()}`)
+      await delay(1000)
+      emit('event-3', `/events (3) says\n ${Date.now()}`)
+      await delay(1000)
     }
   }).toResponse()
 }

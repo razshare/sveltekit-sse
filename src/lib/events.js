@@ -34,16 +34,28 @@ function createEmitter(controller) {
   let id = 1
   const encoder = new TextEncoder()
   /** @type {function(string):void} */
-  return function (eventName, data) {
+  return function emit(eventName, data) {
     const typeOfEventName = typeof eventName
     const typeOfData = typeof data
     if (typeOfEventName !== 'string') {
-      throw new Error(`Event name must of type \`string\`, received \`${typeOfEventName}\`.`)
+      throw new Error(
+        `Event name must of type \`string\`, received \`${typeOfEventName}\`.`,
+      )
     }
     if (typeOfData !== 'string') {
-      throw new Error(`Event data must of type \`string\`, received \`${typeOfData}\`.`)
+      throw new Error(
+        `Event data must of type \`string\`, received \`${typeOfData}\`.`,
+      )
     }
-    const payload = `id: ${id}\nevent: ${eventName}\ndata: ${data}\n\n`
+    if (eventName.includes('\n')) {
+      throw new Error(
+        `The name of the event must not contain new line characters, received "${eventName}"`,
+      )
+    }
+    const datas = data.split('\n')
+    const payload = `id: ${id}\nevent: ${eventName}\ndata: ${datas.join(
+      '\ndata: ',
+    )}\n\n`
     controller.enqueue(encoder.encode(payload))
     id++
   }
@@ -68,6 +80,7 @@ function createStream(producer, onCancel) {
       controller.close()
     },
     async cancel() {
+      // eslint-disable-next-line @typescript-eslint/no-this-alias
       const self = this
       for (const callback of onCancel) {
         await callback(self)
@@ -143,7 +156,7 @@ export function events(producer) {
         headers: {
           'Cache-Control': 'no-store',
           'Content-Type': 'text/event-stream',
-          Connection: 'keep-alive',
+          'Connection': 'keep-alive',
           ...headers,
         },
       })

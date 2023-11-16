@@ -3,7 +3,11 @@
   let k = 0
 </script>
 
-<button on:click={() => k++}>
+<button
+  on:click={function run() {
+    k++
+  }}
+>
   <span>Reload all components</span>
 </button>
 

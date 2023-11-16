@@ -40,7 +40,7 @@ and consume it on your client with:
 <script>
   // src/routes/+page.svelte
   import { source } from 'sveltekit-sse'
-  const value = source('/custom-event').onError(event => console.error({ event }))
+  const value = source('/custom-event')
 </script>
 {$value}
 ```
@@ -141,4 +141,29 @@ Here's an example how to use it.
     console.log({ value })
   })
 </script>
+```
+
+
+## Custom Headers
+
+The standard `EventSource` class does not permit setting custom headers or manipulating the underlying request options.
+
+This library implements the client side event sourcing from scratch using `fetch`.
+
+> **Note**\
+> Custom headers are only available since version `0.4.0`.
+
+The following will set a `Authorization: Bearer ...` header to the underlying http request.
+
+```svelte
+<script>
+  import { source } from 'sveltekit-sse'
+
+  const data = source("/event", {
+    headers: {
+      "Authorization": "Bearer ..."
+    }
+  })
+</script>
+{$data}
 ```

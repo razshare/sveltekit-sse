@@ -1,6 +1,6 @@
 {
   "name": "sveltekit-sse",
-  "version": "0.3.7",
+  "version": "0.4.0",
   "scripts": {
     "dev": "vite dev",
     "build": "vite build && npm run package",
@@ -11,7 +11,10 @@
     "check:watch": "svelte-kit sync && svelte-check --tsconfig ./jsconfig.json --watch",
     "prettier": "prettier --write",
     "lint": "eslint .",
-    "format": "prettier --write ./**/*.{js,ts,svelte,html}"
+    "format": "prettier --write ./**/*.{js,ts,svelte,html}",
+    "lint:fix": "eslint --no-error-on-unmatched-pattern --fix \"./src/**/*.{js,ts,html,svelte}\"",
+    "prebuild": "bun run lint:fix",
+    "prelint": "bun run format"
   },
   "exports": {
     ".": {
@@ -31,6 +34,7 @@
     "@sveltejs/adapter-auto": "^2.1.0",
     "@sveltejs/kit": "^1.25.2",
     "@sveltejs/package": "^2.2.2",
+    "@typescript-eslint/eslint-plugin": "^6.11.0",
     "bun-types": "latest",
     "eslint": "^8.51.0",
     "eslint-plugin-svelte": "^2.34.0",
@@ -41,7 +45,9 @@
     "svelte-check": "3.4.4",
     "tslib": "^2.6.2",
     "typescript": "^5.2.2",
-    "vite": "^4.4.11"
+    "vite": "^4.4.11",
+    "@typescript-eslint/parser": "5.62.0",
+    "eslint-config-prettier": "^9.0.0"
   },
   "svelte": "./dist/index.js",
   "types": "./dist/index.d.ts",
