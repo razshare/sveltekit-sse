@@ -6,23 +6,27 @@ const decoder = new TextDecoder()
  * @param {function(string):void} callback
  */
 async function readlines(reader, callback) {
-  let previous = ''
-  let result
-  do {
-    result = await reader.read()
-    const chunk = decoder.decode(result.value)
+  try {
+    let previous = ''
+    let result
+    do {
+      result = await reader.read()
+      const chunk = decoder.decode(result.value)
 
-    const lines = chunk.split('\n')
-    for (let index = 0; index < lines.length; index++) {
-      const line = previous + lines[index]
-      callback(line)
-      if (index === lines.length - 1) {
-        previous = line
-      } else {
-        previous = ''
+      const lines = chunk.split('\n')
+      for (let index = 0; index < lines.length; index++) {
+        const line = previous + lines[index]
+        callback(line)
+        if (index === lines.length - 1) {
+          previous = line
+        } else {
+          previous = ''
+        }
       }
-    }
-  } while (!result.done)
+    } while (!result.done)
+  } catch (e) {
+    return
+  }
 }
 
 /**
@@ -77,7 +81,7 @@ export const CLOSED = 2
  * @param {RequestInfo|URL} resource This defines the resource that you wish to fetch. This can either be:
  * - A string or any other object with a [stringifier](https://developer.mozilla.org/en-US/docs/Glossary/Stringifier) — including a [URL](https://developer.mozilla.org/en-US/docs/Web/API/URL) object — that provides the URL of the resource you want to fetch.
  * - A [Request](https://developer.mozilla.org/en-US/docs/Web/API/Request) object.
- * @param {false|RequestInit} [options] An object containing any custom settings that you want to apply to the request. The possible options are:
+ * @param {false|RequestInit} options An object containing any custom settings that you want to apply to the request. The possible options are:
  * - `method`\
  *   The request method, e.g., `"GET"`, `"POST"`.\
  *   The default is `"GET"`.
@@ -139,6 +143,17 @@ export function stream(resource, options = false) {
     }
   }
 
+  /**
+   *
+   * @param {false|Error} error
+   */
+  function send_close(error = false) {
+    const current_listeners = events.get('close') ?? []
+    for (const listener of current_listeners) {
+      listener({ id: '', event: '', data: '', error })
+    }
+  }
+
   function flush() {
     if (current_id && current_event && current_data) {
       const current_listeners = events.get(current_event) ?? []
@@ -159,58 +174,63 @@ export function stream(resource, options = false) {
   const promise_response = fetch(resource, options ? options : undefined)
   promise_response
     .then(function start(response_local) {
-      response = response_local
-      if (response.status >= 300) {
-        readyState = CLOSED
-        send_error(
-          new Error(
+      try {
+        response = response_local
+        if (response.status >= 300) {
+          readyState = CLOSED
+          throw new Error(
             `Http request failed with status ${response.status} ${response.statusText}.`,
-          ),
-        )
-        return
-      }
+          )
+        }
 
-      if (!response.body) {
-        send_error(
-          new Error(`Something went wrong, could not read the response body.`),
-        )
-        return
-      }
+        if (!response.body) {
+          throw new Error(
+            `Something went wrong, could not read the response body.`,
+          )
+        }
 
-      reader = response.body.getReader()
+        reader = response.body.getReader()
 
-      readlines(reader, function run(line) {
-        if ('' === line) {
-          if (++blank_counter > 1) {
+        reader.closed.then(function run() {
+          send_close()
+        })
+
+        readlines(reader, function run(line) {
+          if ('' === line) {
+            if (++blank_counter > 1) {
+              return
+            }
+            // console.log({
+            //   current_id,
+            //   current_event,
+            //   current_data: current_data.join('\n'),
+            // })
+            flush()
             return
           }
-          // console.log({
-          //   current_id,
-          //   current_event,
-          //   current_data: current_data.join('\n'),
-          // })
-          flush()
-          return
-        }
 
-        blank_counter = 0
+          blank_counter = 0
 
-        const id = parse(line, 'id')
-        const event = parse(line, 'event')
-        const data = parse(line, 'data')
+          const id = parse(line, 'id')
+          const event = parse(line, 'event')
+          const data = parse(line, 'data')
 
-        if (id) {
-          current_id = id
-        }
+          if (id) {
+            current_id = id
+          }
 
-        if (event) {
-          current_event = event
-        }
+          if (event) {
+            current_event = event
+          }
 
-        if (data) {
-          current_data.push(data)
-        }
-      })
+          if (data) {
+            current_data.push(data)
+          }
+        })
+      } catch (e) {
+        // @ts-ignore
+        send_error(e)
+      }
     })
     .catch(function stop() {
       readyState = CLOSED
@@ -234,6 +254,12 @@ export function stream(resource, options = false) {
      */
     set onopen(listener) {
       events.set('open', [listener])
+    },
+    /**
+     * @param {HttpEventCallback} listener
+     */
+    set onclose(listener) {
+      events.set('close', [listener])
     },
     /**
      * The URL the stream is connecting to.

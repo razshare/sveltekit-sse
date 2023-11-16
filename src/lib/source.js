@@ -15,9 +15,10 @@ const references = new Map()
 
 /**
  *
- * @param {string} url path to the stream.
+ * @param {RequestInfo|URL} resource path to the stream.
  */
-async function disconnect(url) {
+async function disconnect(resource) {
+  const url = `${resource}`
   const reference = references.get(url)
   if (reference) {
     const { eventSource } = reference
@@ -40,12 +41,13 @@ async function disconnect(url) {
 
 /**
  *
- * @param {string} url path to the stream.
- * @param {false|RequestInit} [options]
+ * @param {RequestInfo|URL} resource path to the stream.
+ * @param {false|RequestInit} options options for the underlying http request.
  */
-function connect(url, options = false) {
+function connect(resource, options = false) {
+  const url = `${resource}`
   if (!references.has(url)) {
-    const eventSource = stream(url, options)
+    const eventSource = stream(resource, options)
     const freshReference = {
       eventSource,
       connectionsCounter: 0,
@@ -87,13 +89,14 @@ function connect(url, options = false) {
  */
 
 /**
- * @param {string} url
+ * @param {RequestInfo|URL} resource path to the stream.
+ * @param {false|RequestInit} options options for the underlying http request.
  * @param {string} eventName
  * @param {Map<string, import('svelte/store').Readable<string>>} readables
  * @param {SourceState} state
  */
-function createStore(url, eventName, readables, state) {
-  const { eventSource } = connect(url)
+function createStore(resource, options, eventName, readables, state) {
+  const { eventSource } = connect(resource, options)
   return readable('', function start(set) {
     /**
      *
@@ -107,7 +110,7 @@ function createStore(url, eventName, readables, state) {
 
     return async function stop() {
       state.eventsCounter--
-      await disconnect(url)
+      await disconnect(resource)
       eventSource.removeEventListener(eventName, listener)
       readables.delete(eventName)
     }
@@ -122,10 +125,11 @@ function createStore(url, eventName, readables, state) {
  */
 
 /**
- * @param {string} url
+ * @param {RequestInfo|URL} resource path to the stream.
+ * @param {false|RequestInit} options options for the underlying http request.
  * @param {string} eventName
  */
-function createTransformer(url, eventName) {
+function createTransformer(resource, options, eventName) {
   /**
    * @template To
    * @param {TransformerCallback<To>} callback
@@ -141,7 +145,7 @@ function createTransformer(url, eventName) {
       return readable(data)
     }
 
-    const { eventSource } = connect(url)
+    const { eventSource } = connect(resource, options)
     /**
      * @type {ReadableStream<string>}
      */
@@ -172,13 +176,13 @@ function createTransformer(url, eventName) {
 /**
  * Consume a server sent event as a readable store.
  *
- * > **Note**: calling this multiple times using the same `url` string will not create multiple streams, instead the same stream will be reused for all exposed events on the given `url`.
+ * > **Note**: calling this multiple times using the same `resource` string will not create multiple streams, instead the same stream will be reused for all exposed events on the given `resource`.
  *
  * > **Note**: source values rendered on the server will always be initialized with blank (`''`).
- * @param {string} url path to the stream.
+ * @param {RequestInfo|URL} resource path to the stream.
+ * @param {false|RequestInit} options options for the underlying http request.
  */
-export function source(url) {
-  let reconnect = false
+export function source(resource, options = false) {
   /** @type {SourceState} */
   let state = {
     eventsCounter: 0,
@@ -192,7 +196,7 @@ export function source(url) {
      * @returns {Promise<void>}
      */
     close() {
-      return disconnect(url)
+      return disconnect(resource)
     },
     /**
      * Subscribe to the default `message` event.
@@ -211,7 +215,10 @@ export function source(url) {
       }
 
       if (!readables.has('message')) {
-        readables.set('message', createStore(url, 'message', readables, state))
+        readables.set(
+          'message',
+          createStore(resource, options, 'message', readables, state),
+        )
       }
 
       state.eventsCounter++
@@ -230,21 +237,40 @@ export function source(url) {
      * @returns {ReturnType<source>}
      * @throws when `callback` is not of type `function`.
      */
-    onError(callback) {
+    onerror(callback) {
       if (!browser) {
         return this
       }
       const typeOfValue = typeof callback
       if (typeOfValue !== 'function') {
         throw new Error(
-          `Error callback must be of type \`function\`, received \`${typeOfValue}\`.`,
+          `onerror callback must be of type \`function\`, received \`${typeOfValue}\`.`,
         )
       }
-      const { eventSource } = connect(url)
+      const { eventSource } = connect(resource, options)
       eventSource.onerror = function run(event) {
-        if (!reconnect) {
-          disconnect(url)
-        }
+        callback(event)
+      }
+      return this
+    },
+    /**
+     * Invoke `callback` whenever the connections closes.
+     * @param {import('./stream').HttpEventCallback} callback
+     * @returns {ReturnType<source>}
+     * @throws when `callback` is not of type `function`.
+     */
+    onclose(callback) {
+      if (!browser) {
+        return this
+      }
+      const typeOfValue = typeof callback
+      if (typeOfValue !== 'function') {
+        throw new Error(
+          `onclose callback must be of type \`function\`, received \`${typeOfValue}\`.`,
+        )
+      }
+      const { eventSource } = connect(resource, options)
+      eventSource.onclose = function run(event) {
         callback(event)
       }
       return this
@@ -253,7 +279,8 @@ export function source(url) {
      * Select an event from the stream.
      * @param {string} eventName name of the event
      * @throws when `eventName` is not of type `string`.
-     * @throws when event `eventName` is not found.
+     * @throws when `eventName` is not found.
+     * @throws when `eventName` containst new lines (`\n`).
      */
     select(eventName) {
       if (!browser) {
@@ -273,6 +300,11 @@ export function source(url) {
           },
         }
       }
+      if (eventName.includes('\n')) {
+        throw new Error(
+          `The name of the event must not contain new line characters, received "${eventName}"`,
+        )
+      }
       const typeOfValue = typeof eventName
       if (typeOfValue !== 'string') {
         throw new Error(
@@ -281,7 +313,10 @@ export function source(url) {
       }
 
       if (!readables.has(eventName)) {
-        readables.set(eventName, createStore(url, eventName, readables, state))
+        readables.set(
+          eventName,
+          createStore(resource, options, eventName, readables, state),
+        )
       }
 
       state.eventsCounter++
@@ -297,12 +332,12 @@ export function source(url) {
         /**
          * Transform the stream into a readable store.
          */
-        transform: createTransformer(url, eventName),
+        transform: createTransformer(resource, options, eventName),
       }
     },
     /**
      * Transform the stream into a readable store.
      */
-    transform: createTransformer(url, 'message'),
+    transform: createTransformer(resource, options, 'message'),
   }
 }

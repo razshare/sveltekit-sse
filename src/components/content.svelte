@@ -2,6 +2,13 @@
   import { source } from '$lib/source.js'
 
   const connection1 = source('/custom-event')
+  connection1.onclose(function run(event) {
+    debugger
+    console.log({ event })
+  })
+  setTimeout(function run() {
+    connection1.close()
+  }, 3000)
   const single1 = connection1.select('message')
   const transformed1 = single1.transform(
     /**
