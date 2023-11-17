@@ -49,7 +49,7 @@ function createEmitter(controller) {
     }
     if (eventName.includes('\n')) {
       throw new Error(
-        `The name of the event must not contain new line characters, received "${eventName}"`,
+        `Event name must not contain new line characters, received "${eventName}".`,
       )
     }
     const datas = data.split('\n')
