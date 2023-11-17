@@ -1,6 +1,6 @@
 import { readable } from 'svelte/store'
-import { browser } from '$app/environment'
 import { CLOSED, stream } from './stream'
+import { IS_BROWSER } from './constants'
 
 /**
  * @typedef Reference
@@ -135,7 +135,7 @@ function createTransformer(resource, options, eventName) {
    * @param {TransformerCallback<To>} callback
    */
   return function transform(callback) {
-    if (!browser) {
+    if (!IS_BROWSER) {
       /**
        * @type {To}
        */
@@ -204,7 +204,7 @@ export function source(resource, options = false) {
      * @throws when Subscribing callback is not of type `function`.
      */
     subscribe(callback) {
-      if (!browser) {
+      if (!IS_BROWSER) {
         return readable('').subscribe(callback)
       }
       const typeOfValue = typeof callback
@@ -238,7 +238,7 @@ export function source(resource, options = false) {
      * @throws when `callback` is not of type `function`.
      */
     onerror(callback) {
-      if (!browser) {
+      if (!IS_BROWSER) {
         return this
       }
       const typeOfValue = typeof callback
@@ -260,7 +260,7 @@ export function source(resource, options = false) {
      * @throws when `callback` is not of type `function`.
      */
     onclose(callback) {
-      if (!browser) {
+      if (!IS_BROWSER) {
         return this
       }
       const typeOfValue = typeof callback
@@ -283,7 +283,7 @@ export function source(resource, options = false) {
      * @throws when `eventName` containst new lines (`\n`).
      */
     select(eventName) {
-      if (!browser) {
+      if (!IS_BROWSER) {
         return {
           subscribe: readable('').subscribe,
           /**

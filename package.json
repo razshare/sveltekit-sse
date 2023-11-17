@@ -28,7 +28,8 @@
     "!dist/**/*.spec.*"
   ],
   "peerDependencies": {
-    "svelte": "^4.0.0"
+    "svelte": "^4.0.0",
+    "@sveltejs/kit": "^1.25.2"
   },
   "devDependencies": {
     "@sveltejs/adapter-auto": "^2.1.0",
