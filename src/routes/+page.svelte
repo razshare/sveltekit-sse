@@ -1,16 +1,4 @@
-<script>
-  import Content from '../components/content.svelte'
-  let k = 0
-</script>
-
-<button
-  on:click={function run() {
-    k++
-  }}
->
-  <span>Reload all components</span>
-</button>
-
-{#key k}
-  <Content />
-{/key}
+<h1>Welcome to SvelteKit</h1>
+<p>
+  Visit <a href="https://kit.svelte.dev">kit.svelte.dev</a> to read the documentation
+</p>

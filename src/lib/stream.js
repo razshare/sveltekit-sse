@@ -4,28 +4,39 @@ const decoder = new TextDecoder()
 
 /**
  *
+ * @param {string} slice
+ * @param {function(string):void} callback
+ * @returns {string}
+ */
+function propagateNextLine(slice, callback) {
+  const index = slice.indexOf('\n')
+  if (index >= 0) {
+    const line = slice.substring(0, index)
+    callback(line)
+    return slice.substring(index + 1)
+  }
+
+  return ''
+}
+
+/**
+ *
  * @param { ReadableStreamDefaultReader<Uint8Array>} reader
  * @param {function(string):void} callback
  */
 async function readlines(reader, callback) {
+  // debugger;
   try {
-    let previous = ''
-    let result
-    do {
-      result = await reader.read()
-      const chunk = decoder.decode(result.value)
-
-      const lines = chunk.split('\n')
-      for (let index = 0; index < lines.length; index++) {
-        const line = previous + lines[index]
-        callback(line)
-        if (index === lines.length - 1) {
-          previous = line
-        } else {
-          previous = ''
-        }
-      }
-    } while (!result.done)
+    let allowedToRead = true
+    reader.closed.then(function stop() {
+      allowedToRead = false
+    })
+    let slice = ''
+    while (allowedToRead) {
+      const bytes = await reader.read()
+      slice += decoder.decode(bytes.value)
+      while ((slice = propagateNextLine(slice, callback)));
+    }
   } catch (e) {
     return
   }
