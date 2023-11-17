@@ -1,3 +1,5 @@
+import { IS_BROWSER } from './constants'
+
 const decoder = new TextDecoder()
 
 /**
@@ -150,6 +152,9 @@ export function stream(resource, options = false) {
   let blank_counter = 0
 
   function connect() {
+    if (!IS_BROWSER) {
+      return
+    }
     const promise_response = fetch(resource, options ? options : undefined)
     promise_response
       .then(function start(response_local) {
