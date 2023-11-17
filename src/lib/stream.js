@@ -16,7 +16,7 @@ function propagateNextLine(slice, callback) {
     return slice.substring(index + 1)
   }
 
-  return ''
+  return slice
 }
 
 /**
