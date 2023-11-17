@@ -180,7 +180,7 @@ You can reconnect to the stream whenever the stream closes by invoking `Event.co
   })
 
   setTimeout(function run() {
-    connection1.close()
+    data.close()
   }, 5000)
 
 </script>
