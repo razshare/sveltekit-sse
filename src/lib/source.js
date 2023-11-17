@@ -100,7 +100,7 @@ function createStore(resource, options, eventName, readables, state) {
   return readable('', function start(set) {
     /**
      *
-     * @param {import('./stream').HttpStreamEvent} event
+     * @param {import('./stream').Event} event
      */
     const listener = function run(event) {
       set(event.data)
@@ -233,7 +233,7 @@ export function source(resource, options = false) {
     },
     /**
      * Invoke `callback` whenever an error occurs.
-     * @param {import('./stream').HttpEventCallback} callback
+     * @param {import('./stream').ListenerCallback} callback
      * @returns {ReturnType<source>}
      * @throws when `callback` is not of type `function`.
      */
@@ -254,8 +254,8 @@ export function source(resource, options = false) {
       return this
     },
     /**
-     * Invoke `callback` whenever the connections closes.
-     * @param {import('./stream').HttpEventCallback} callback
+     * Invoke `callback` whenever the connection closes.
+     * @param {import('./stream').ListenerCallback} callback
      * @returns {ReturnType<source>}
      * @throws when `callback` is not of type `function`.
      */

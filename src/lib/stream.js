@@ -46,15 +46,37 @@ function parse(line, token) {
 }
 
 /**
- * @typedef HttpStreamEvent
- * @property {string} id
- * @property {string} event
- * @property {string} data
- * @property {false|Error} error
+ * @callback CloseStream
+ * @param {false|string} reason a short description explaining the reason for closing the stream.
  */
 
 /**
- * @typedef {function(HttpStreamEvent):void} HttpEventCallback
+ * @callback ConnectStream
+ */
+
+/**
+ * @typedef Event
+ * @property {string} id message identifier.
+ * @property {string} event name of the event.
+ * @property {string} data incoming message.
+ * @property {false|Error} error
+ * @property {ConnectStream} connect connect to the stream.
+ * > **Note**\
+ * > You can use this whenever the stream disconnects for any reason in order to reconnect.
+ *
+ * Example
+ * ```js
+ * const connection = source('/custom-event')
+ * connection.onclose(function run({ connect }) {
+ *   console.log('stream closed')
+ *   connect()
+ * })
+ * ```
+ * @property {CloseStream} close close the stream.
+ */
+
+/**
+ * @typedef {function(Event):void} ListenerCallback
  */
 
 /**
@@ -103,7 +125,7 @@ export function stream(resource, options = false) {
   let response = false
 
   /**
-   * @type {Map<string, Array<HttpEventCallback>>}
+   * @type {Map<string, Array<ListenerCallback>>}
    */
   const events = new Map()
 
@@ -127,10 +149,92 @@ export function stream(resource, options = false) {
 
   let blank_counter = 0
 
+  function connect() {
+    const promise_response = fetch(resource, options ? options : undefined)
+    promise_response
+      .then(function start(response_local) {
+        try {
+          response = response_local
+          if (response.status >= 300) {
+            readyState = CLOSED
+            throw new Error(
+              `Http request failed with status ${response.status} ${response.statusText}.`,
+            )
+          }
+
+          if (!response.body) {
+            throw new Error(
+              `Something went wrong, could not read the response body.`,
+            )
+          }
+
+          reader = response.body.getReader()
+
+          reader.closed.then(function run() {
+            send_close()
+          })
+
+          readlines(reader, function run(line) {
+            if ('' === line) {
+              if (++blank_counter > 1) {
+                return
+              }
+              // console.log({
+              //   current_id,
+              //   current_event,
+              //   current_data: current_data.join('\n'),
+              // })
+              flush()
+              return
+            }
+
+            blank_counter = 0
+
+            const id = parse(line, 'id')
+            const event = parse(line, 'event')
+            const data = parse(line, 'data')
+
+            if (id) {
+              current_id = id
+            }
+
+            if (event) {
+              current_event = event
+            }
+
+            if (data) {
+              current_data.push(data)
+            }
+          })
+        } catch (e) {
+          // @ts-ignore
+          send_error(e)
+        }
+      })
+      .catch(function stop() {
+        readyState = CLOSED
+      })
+  }
+
   /**
    * @type {false| ReadableStreamDefaultReader<Uint8Array>}
    */
   let reader = false
+
+  /**
+   * Close the stream.
+   * @param {false|string} reason a short description explaining the reason for closing the stream.
+   * @returns
+   */
+  async function close(reason = false) {
+    const reader_local = reader
+    reader = false
+    if (!reader_local) {
+      return
+    }
+    await reader_local.cancel(reason ? reason : undefined)
+    reader_local.releaseLock()
+  }
 
   /**
    *
@@ -139,7 +243,7 @@ export function stream(resource, options = false) {
   function send_error(error) {
     const current_listeners = events.get('error') ?? []
     for (const listener of current_listeners) {
-      listener({ id: '', event: '', data: '', error })
+      listener({ id: '', event: '', data: '', error, connect, close })
     }
   }
 
@@ -150,7 +254,7 @@ export function stream(resource, options = false) {
   function send_close(error = false) {
     const current_listeners = events.get('close') ?? []
     for (const listener of current_listeners) {
-      listener({ id: '', event: '', data: '', error })
+      listener({ id: '', event: '', data: '', error, connect, close })
     }
   }
 
@@ -163,6 +267,8 @@ export function stream(resource, options = false) {
           event: current_event,
           data: current_data.join('\n'),
           error: false,
+          connect,
+          close,
         })
       }
       current_id = ''
@@ -171,92 +277,29 @@ export function stream(resource, options = false) {
     }
   }
 
-  const promise_response = fetch(resource, options ? options : undefined)
-  promise_response
-    .then(function start(response_local) {
-      try {
-        response = response_local
-        if (response.status >= 300) {
-          readyState = CLOSED
-          throw new Error(
-            `Http request failed with status ${response.status} ${response.statusText}.`,
-          )
-        }
-
-        if (!response.body) {
-          throw new Error(
-            `Something went wrong, could not read the response body.`,
-          )
-        }
-
-        reader = response.body.getReader()
-
-        reader.closed.then(function run() {
-          send_close()
-        })
-
-        readlines(reader, function run(line) {
-          if ('' === line) {
-            if (++blank_counter > 1) {
-              return
-            }
-            // console.log({
-            //   current_id,
-            //   current_event,
-            //   current_data: current_data.join('\n'),
-            // })
-            flush()
-            return
-          }
-
-          blank_counter = 0
-
-          const id = parse(line, 'id')
-          const event = parse(line, 'event')
-          const data = parse(line, 'data')
-
-          if (id) {
-            current_id = id
-          }
-
-          if (event) {
-            current_event = event
-          }
-
-          if (data) {
-            current_data.push(data)
-          }
-        })
-      } catch (e) {
-        // @ts-ignore
-        send_error(e)
-      }
-    })
-    .catch(function stop() {
-      readyState = CLOSED
-    })
+  connect()
 
   return {
     /**
-     * @param {HttpEventCallback} listener
+     * @param {ListenerCallback} listener
      */
     set onerror(listener) {
       events.set('error', [listener])
     },
     /**
-     * @param {HttpEventCallback} listener
+     * @param {ListenerCallback} listener
      */
     set onmessage(listener) {
       events.set('message', [listener])
     },
     /**
-     * @param {HttpEventCallback} listener
+     * @param {ListenerCallback} listener
      */
     set onopen(listener) {
       events.set('open', [listener])
     },
     /**
-     * @param {HttpEventCallback} listener
+     * @param {ListenerCallback} listener
      */
     set onclose(listener) {
       events.set('close', [listener])
@@ -281,7 +324,7 @@ export function stream(resource, options = false) {
     /**
      * Add a new event listener.
      * @param {string} type
-     * @param {HttpEventCallback} listener
+     * @param {ListenerCallback} listener
      */
     addEventListener(type, listener) {
       if (!events.has(type)) {
@@ -295,7 +338,7 @@ export function stream(resource, options = false) {
     /**
      * Remove an event listener.
      * @param {string} type
-     * @param {HttpEventCallback} listener
+     * @param {ListenerCallback} listener
      */
     removeEventListener(type, listener) {
       if (!events.has(type)) {
@@ -313,12 +356,6 @@ export function stream(resource, options = false) {
      * Close the stream.
      * @param {string} [reason] a short description explaining the reason for closing the stream.
      */
-    async close(reason = undefined) {
-      if (!reader) {
-        return
-      }
-      await reader.cancel(reason)
-      reader.releaseLock()
-    },
+    close,
   }
 }

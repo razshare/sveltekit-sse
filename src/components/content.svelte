@@ -2,8 +2,9 @@
   import { source } from '$lib/source.js'
 
   const connection1 = source('/custom-event')
-  connection1.onclose(function run(event) {
-    console.log('stream closed', event)
+  connection1.onclose(function run({ connect }) {
+    console.log('stream closed')
+    connect()
   })
   setTimeout(function run() {
     connection1.close()

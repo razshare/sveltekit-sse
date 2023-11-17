@@ -167,3 +167,22 @@ The following will set a `Authorization: Bearer ...` header to the underlying ht
 </script>
 {$data}
 ```
+
+## Reconnect
+
+You can reconnect to the stream whenever the stream closes by invoking `Event.connect`.
+
+```svelte
+<script>
+  const data = source('/custom-event').onclose(function stop({ connect }) {
+    connect()
+    console.log('reconnecting')
+  })
+
+  setTimeout(function run() {
+    connection1.close()
+  }, 5000)
+
+</script>
+{$data}
+```
