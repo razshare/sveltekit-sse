@@ -174,6 +174,8 @@ You can reconnect to the stream whenever the stream closes by invoking `Event.co
 
 ```svelte
 <script>
+  import { source } from 'sveltekit-sse'
+
   const data = source('/custom-event').onclose(function stop({ connect }) {
     connect()
     console.log('reconnecting')
