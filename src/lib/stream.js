@@ -91,13 +91,15 @@ export function stream(resource, options = false) {
   let readyState = CONNECTING
 
   const controller = new AbortController()
-  const rest = options ? { ...options } : {}
   const openWhenHidden = true
+  const rest = options ? { ...options } : {}
   async function connect() {
     if (!IS_BROWSER) {
       return
     }
     await fetchEventSource(`${resource}`, {
+      openWhenHidden,
+      ...rest,
       onmessage({ id, event, data }) {
         sendMessage({ id, event, data, error: false })
       },
@@ -109,8 +111,6 @@ export function stream(resource, options = false) {
         readyState = CLOSED
         sendError(error)
       },
-      openWhenHidden,
-      ...rest,
     })
     readyState = OPEN
   }
