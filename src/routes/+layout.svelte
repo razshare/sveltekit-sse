@@ -14,20 +14,18 @@
       return
     }
     SSE_unsub = source('/sse').subscribe(async function watch(payload) {
-      console.log({ payload })
       if (!payload?.length) return
       let data
       try {
-        // data = JSON.parse(payload)
+        data = JSON.parse(payload)
       } catch (e) {
-        // debugger;
-        // console.log(e, payload)
+        console.log(e, payload)
         data = payload
       }
       if (Array.isArray(data)) {
         payloads = [...(payloads || []), ...data]
       }
-      // console.log({ payloads })
+      console.log({ payloads })
     })
   })
 </script>

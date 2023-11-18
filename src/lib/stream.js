@@ -13,18 +13,41 @@ async function readlines(reader, callback) {
     reader.closed.then(function stop() {
       allowedToRead = false
     })
-    let previous = ''
+
+    const code = Uint8Array.from(['\n'.charCodeAt(0)])[0]
+    const items = []
     while (allowedToRead) {
-      const bytes = await reader.read()
-      const lines = decoder.decode(bytes.value).split('\n')
-      for (const line of lines) {
-        if (previous !== '') {
-          callback(previous + line)
-          previous = ''
-        } else {
-          callback(line)
+      const buffer = await reader.read()
+      if (!buffer.value) {
+        continue
+      }
+
+      const bytes = buffer.value
+      let remainingBytes = bytes
+      // console.log('test')
+      let offset = 0
+      let first = true
+      for (let index = offset; index < bytes.length; index++) {
+        if (bytes[index] === code) {
+          const slice = bytes.slice(offset, index)
+          const decoded = decoder.decode(slice)
+          items.push(decoded)
+          const line = items.join('')
+          if (first) {
+            callback(line)
+            remainingBytes = bytes.slice(index)
+          } else {
+            callback(line.substring(1))
+            remainingBytes = bytes.slice(index + 1)
+          }
+          items.splice(0)
+          offset = index
+          first = false
         }
       }
+
+      const decoded = decoder.decode(remainingBytes)
+      items.push(decoded)
     }
   } catch (e) {
     return
@@ -190,6 +213,7 @@ export function stream(resource, options = false) {
               //   current_data: current_data.join('\n'),
               // })
               flush()
+              blank_counter = 0
               return
             }
 

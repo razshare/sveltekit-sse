@@ -1,6 +1,6 @@
 {
   "name": "sveltekit-sse",
-  "version": "0.4.6",
+  "version": "0.4.7",
   "scripts": {
     "dev": "vite dev",
     "build": "vite build && npm run package",
