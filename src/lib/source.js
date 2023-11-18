@@ -42,7 +42,7 @@ async function disconnect(resource) {
 /**
  *
  * @param {RequestInfo|URL} resource path to the stream.
- * @param {false|import('@microsoft/fetch-event-source').FetchEventSourceInit} options options for the underlying http request.
+ * @param {false|import('./stream').Options} options options for the underlying http request.
  */
 function connect(resource, options = false) {
   const url = `${resource}`
@@ -90,7 +90,7 @@ function connect(resource, options = false) {
 
 /**
  * @param {RequestInfo|URL} resource path to the stream.
- * @param {false|import('@microsoft/fetch-event-source').FetchEventSourceInit} options options for the underlying http request.
+ * @param {false|import('./stream').Options} options options for the underlying http request.
  * @param {string} eventName
  * @param {Map<string, import('svelte/store').Readable<string>>} readables
  * @param {SourceState} state
@@ -126,7 +126,7 @@ function createStore(resource, options, eventName, readables, state) {
 
 /**
  * @param {RequestInfo|URL} resource path to the stream.
- * @param {false|import('@microsoft/fetch-event-source').FetchEventSourceInit} options options for the underlying http request.
+ * @param {false|import('./stream').Options} options options for the underlying http request.
  * @param {string} eventName
  */
 function createTransformer(resource, options, eventName) {
@@ -180,7 +180,7 @@ function createTransformer(resource, options, eventName) {
  *
  * > **Note**: source values rendered on the server will always be initialized with blank (`''`).
  * @param {RequestInfo|URL} resource path to the stream.
- * @param {false|import('@microsoft/fetch-event-source').FetchEventSourceInit} options options for the underlying http request.
+ * @param {false|import('./stream').Options} options options for the underlying http request.
  */
 export function source(resource, options = false) {
   /** @type {SourceState} */

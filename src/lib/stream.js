@@ -60,13 +60,22 @@ export const OPEN = 1
 export const CLOSED = 2
 
 /**
+ * @template T
+ * @typedef {{[K in keyof T]:T[K]} & {}} Pretty
+ */
+
+/**
+ * @typedef {Pretty<Pick<import('@microsoft/fetch-event-source').FetchEventSourceInit, "body"|"cache"|"credentials"|"fetch"|"headers"|"integrity"|"keepalive"|"method"|"mode"|"openWhenHidden"|"redirect"|"referrer"|"referrerPolicy"|"timeout"|"window">>} Options
+ */
+
+/**
  * Stream an http request (using `fetch` underneath) as if it were an `EventSource`.
  *
  * This will allow you to set custom http headers for the request, which the standard `EventSource` does not permit.
  * @param {RequestInfo|URL} resource This defines the resource that you wish to fetch. This can either be:
  * - A string or any other object with a [stringifier](https://developer.mozilla.org/en-US/docs/Glossary/Stringifier) — including a [URL](https://developer.mozilla.org/en-US/docs/Web/API/URL) object — that provides the URL of the resource you want to fetch.
  * - A [Request](https://developer.mozilla.org/en-US/docs/Web/API/Request) object.
- * @param {false|import('@microsoft/fetch-event-source').FetchEventSourceInit} options An object containing any custom settings that you want to apply to the request. The possible options are:
+ * @param {false|Options} options An object containing any custom settings that you want to apply to the request. The possible options are:
  * - `method`\
  *   The request method, e.g., `"GET"`, `"POST"`.\
  *   The default is `"GET"`.
@@ -111,6 +120,7 @@ export function stream(resource, options = false) {
         readyState = CLOSED
         sendError(error)
       },
+      signal: controller.signal,
     })
     readyState = OPEN
   }
