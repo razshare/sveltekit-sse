@@ -33,7 +33,7 @@
 function createEmitter(controller) {
   let id = 1
   const encoder = new TextEncoder()
-  /** @type {function(string):void} */
+  /** @type {function(string, string):void} */
   return function emit(eventName, data) {
     const typeOfEventName = typeof eventName
     const typeOfData = typeof data
@@ -52,10 +52,7 @@ function createEmitter(controller) {
         `Event name must not contain new line characters, received "${eventName}".`,
       )
     }
-    const datas = data.split('\n')
-    const payload = `id: ${id}\nevent: ${eventName}\ndata: ${datas.join(
-      '\ndata: ',
-    )}\n\n`
+    const payload = `id: ${id}\nevent: ${eventName}\ndata: ${data}\n\n`
     controller.enqueue(encoder.encode(payload))
     id++
   }

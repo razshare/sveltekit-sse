@@ -1,6 +1,7 @@
 <script>
-  import { source } from '$lib'
+  // import { source } from '$lib'
   import { onMount } from 'svelte'
+  import { source } from '$lib'
   /**
    * @type {false|import('svelte/store').Unsubscriber}
    */
@@ -9,10 +10,11 @@
    * @type {Array<string>}
    */
   let payloads = []
-  onMount(function run() {
+  onMount(async function run() {
     if (SSE_unsub) {
       return
     }
+
     SSE_unsub = source('/sse').subscribe(async function watch(payload) {
       if (!payload?.length) return
       let data
