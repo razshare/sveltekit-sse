@@ -67,7 +67,7 @@
   const multiple3 = connection2.select('event-3')
 </script>
 
-<h3>1 strea & 1 event</h3>
+<h3>1 stream & 1 event</h3>
 <pre>{$single1}</pre>
 <br />
 <h3>1 stream & 3 events</h3>
