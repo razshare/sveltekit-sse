@@ -131,16 +131,9 @@ export function stream(resource, options = false) {
    * @returns
    */
   function close(reason = false) {
-    console.log({ reason })
-    controller.abort()
-    // const reader_local = reader
-    // reader = false
-    // if (!reader_local) {
-    //   controller.abort()
-    //   return
-    // }
-    // await reader_local.cancel(reason ? reason : undefined)
-    // reader_local.releaseLock()
+    controller.abort(reason)
+    readyState = CLOSED
+    sendClose()
   }
 
   /**
@@ -170,12 +163,13 @@ export function stream(resource, options = false) {
    * @param {{id:string,event:string,data:string,error:false|Error}} payload
    */
   function sendMessage({ id, event, data }) {
-    const current_listeners = events.get('message') ?? []
+    const decoded = decodeURIComponent(data)
+    const current_listeners = events.get(event) ?? []
     for (const listener of current_listeners) {
       listener({
         id,
         event,
-        data,
+        data: decoded,
         error: false,
         connect,
         close,

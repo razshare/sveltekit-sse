@@ -11,7 +11,6 @@ const delay = function run(milliseconds) {
 }
 
 export function GET() {
-  console.log('test')
   return event(async function run(emit) {
     // eslint-disable-next-line no-constant-condition
     while (true) {

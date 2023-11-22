@@ -3,7 +3,7 @@
 
   const connection1 = source('/custom-event')
   connection1.onclose(function run({ connect }) {
-    console.log('stream closed')
+    console.log('stream closed, reconnecting')
     connect()
   })
   setTimeout(function run() {

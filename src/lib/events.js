@@ -52,8 +52,13 @@ function createEmitter(controller) {
         `Event name must not contain new line characters, received "${eventName}".`,
       )
     }
-    const payload = `id: ${id}\nevent: ${eventName}\ndata: ${data}\n\n`
-    controller.enqueue(encoder.encode(payload))
+
+    controller.enqueue(encoder.encode(`id: ${id}\nevent: ${eventName}\n`))
+    const chunks = data.split('\n')
+    for (const chunk of chunks) {
+      controller.enqueue(encoder.encode(`data: ${encodeURIComponent(chunk)}\n`))
+    }
+    controller.enqueue(encoder.encode('\n'))
     id++
   }
 }
