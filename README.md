@@ -170,7 +170,7 @@ The following will set a `Authorization: Bearer ...` header to the underlying ht
 
 ## Reconnect
 
-You can reconnect to the stream whenever the stream closes by invoking `Event.connect`.
+You can reconnect to the stream whenever the stream closes by invoking `Event::connect`.
 
 ```svelte
 <script>
