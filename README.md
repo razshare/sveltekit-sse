@@ -21,10 +21,14 @@ import { event } from 'sveltekit-sse'
  * @param {number} milliseconds
  * @returns
  */
-const delay = milliseconds => new Promise(r => setTimeout(r, milliseconds))
+function delay(milliseconds){
+  return new Promise(function run(){
+    setTimeout(r, milliseconds)
+  })
+}
 
 export function GET() {
-  return event(async emit => {
+  return event(async function run(emit){
     while (true) {
       emit(`${Date.now()}`)
       await delay(1000)
@@ -61,10 +65,14 @@ import { events } from 'sveltekit-sse'
  * @param {number} milliseconds
  * @returns
  */
-const delay = milliseconds => new Promise(r => setTimeout(r, milliseconds))
+function delay(milliseconds){
+  return new Promise(function run(){
+    setTimeout(r, milliseconds)
+  })
+}
 
 export function GET() {
-  return events(async emit => {
+  return events(async function run(emit){
     while (true) {
       emit('event-1', `/events (1) says: ${Date.now()}`)
       emit('event-2', `/events (2) says: ${Date.now()}`)
@@ -106,10 +114,10 @@ Here's an example how to use it.
 <script>
   import { source } from 'sveltekit-sse'
 
-  const connection1 = source('/custom-event')
-  const single1 = connection1.select('message')
+  const connection = source('/custom-event')
+  const channel = connection.select('message')
 
-  const transformed1 = single1.transform(stream => {
+  const transformed = channel.transform(function start(stream) {
     let state = {
       /** @type {Array<function(string):void>}*/
       listeners: [],
@@ -121,25 +129,29 @@ Here's an example how to use it.
           state.listeners.push(callback)
         }
 
-        return () => (state.listeners = state.listeners.filter(value => value !== callback))
+        return function stop(){
+          state.listeners = state.listeners.filter(function pass(value){
+            return value !== callback
+          })
+        }
       },
     }
 
-    const start = async function () {
+    const listen = async function () {
       let value = ''
       while (({ value } = await reader.read())) {
-        state.listeners.forEach(callback => callback(value))
+        state.listeners.forEach(function run(callback){
+          callback(value)
+        })
       }
     }
 
-    start()
+    listen()
 
     return store
   })
 
-  transformed1.subscribe(value => {
-    console.log({ value })
-  })
+  $: console.log({$transformed})
 </script>
 ```
 
