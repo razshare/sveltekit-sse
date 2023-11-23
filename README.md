@@ -148,7 +148,7 @@ Here's an example how to use it.
 
 The standard `EventSource` class does not permit setting custom headers or manipulating the underlying request options.
 
-This library implements the client side event sourcing from scratch using `fetch`.
+This library achieves client side event sourcing using `fetch`.
 
 > **Note**\
 > Custom headers are only available since version `0.4.0`.
