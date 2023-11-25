@@ -13,8 +13,8 @@
     "lint": "eslint .",
     "format": "prettier --write ./**/*.{js,ts,svelte,html}",
     "lint:fix": "eslint --no-error-on-unmatched-pattern --fix \"./src/**/*.{js,ts,html,svelte}\"",
-    "prebuild": "bun run lint:fix",
-    "prelint": "bun run format"
+    "prebuild": "npm run lint:fix",
+    "prelint": "npm run format"
   },
   "exports": {
     ".": {
