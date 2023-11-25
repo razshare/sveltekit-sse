@@ -16,6 +16,7 @@ jobs:
         with:
           node-version: 16
       - run: npm i
+      - run: npm lint:fix
       - run: npm run build
 
   publish-npm:
@@ -27,7 +28,8 @@ jobs:
         with:
           node-version: 16
           registry-url: https://registry.npmjs.org/
-      - run: npm ci
+      - run: npm i
+      - run: npm lint:fix
       - run: npm run build
       - run: npm run package
       - run: npm publish

@@ -28,17 +28,17 @@
     "!dist/**/*.spec.*"
   ],
   "peerDependencies": {
-    "svelte": "^4.0.0",
+    "@microsoft/fetch-event-source": "^2.0.1",
     "@sveltejs/kit": "^1.25.2",
-    "@microsoft/fetch-event-source": "^2.0.1"
+    "svelte": "^4.0.0"
   },
   "devDependencies": {
     "@microsoft/fetch-event-source": "^2.0.1",
     "@sveltejs/adapter-auto": "^2.1.0",
     "@sveltejs/kit": "^1.25.2",
     "@sveltejs/package": "^2.2.2",
-    "@typescript-eslint/eslint-plugin": "^6.11.0",
-    "@typescript-eslint/parser": "5.62.0",
+    "@typescript-eslint/eslint-plugin": "^6.12.0",
+    "@typescript-eslint/parser": "^6.12.0",
     "bun-types": "latest",
     "eslint": "^8.51.0",
     "eslint-config-prettier": "^9.0.0",
