@@ -237,14 +237,14 @@ export function source(resource, options = false) {
      * @returns {ReturnType<source>}
      * @throws when `callback` is not of type `function`.
      */
-    onerror(callback) {
+    onError(callback) {
       if (!IS_BROWSER) {
         return this
       }
       const typeOfValue = typeof callback
       if (typeOfValue !== 'function') {
         throw new Error(
-          `onerror callback must be of type \`function\`, received \`${typeOfValue}\`.`,
+          `The onError callback must be of type \`function\`, received \`${typeOfValue}\`.`,
         )
       }
       const { eventSource } = connect(resource, options)
@@ -259,14 +259,14 @@ export function source(resource, options = false) {
      * @returns {ReturnType<source>}
      * @throws when `callback` is not of type `function`.
      */
-    onclose(callback) {
+    onClose(callback) {
       if (!IS_BROWSER) {
         return this
       }
       const typeOfValue = typeof callback
       if (typeOfValue !== 'function') {
         throw new Error(
-          `onclose callback must be of type \`function\`, received \`${typeOfValue}\`.`,
+          `The onClose callback must be of type \`function\`, received \`${typeOfValue}\`.`,
         )
       }
       const { eventSource } = connect(resource, options)

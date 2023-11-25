@@ -2,7 +2,7 @@
   import { source } from '$lib/source.js'
 
   const connection1 = source('/custom-event')
-  connection1.onclose(function run({ connect }) {
+  connection1.onClose(function run({ connect }) {
     console.log('stream closed, reconnecting')
     connect()
   })
