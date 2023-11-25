@@ -7,9 +7,9 @@ Install with:
 ```sh
 npm i -D sveltekit-sse
 ```
-
-> **Warning**\
+> [!WARNING]  
 > previously `npm i -D sveltekit-server-sent-events`
+
 
 Create your server sent event with:
 
@@ -162,7 +162,7 @@ The standard `EventSource` class does not permit setting custom headers or manip
 
 This library achieves client side event sourcing using `fetch`.
 
-> **Note**\
+> [!NOTE]
 > Custom headers are only available since version `0.4.0`.
 
 The following will set a `Authorization: Bearer ...` header to the underlying http request.
