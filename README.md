@@ -22,7 +22,7 @@ import { event } from 'sveltekit-sse'
  * @returns
  */
 function delay(milliseconds){
-  return new Promise(function run(){
+  return new Promise(function run(r){
     setTimeout(r, milliseconds)
   })
 }
@@ -66,7 +66,7 @@ import { events } from 'sveltekit-sse'
  * @returns
  */
 function delay(milliseconds){
-  return new Promise(function run(){
+  return new Promise(function run(r){
     setTimeout(r, milliseconds)
   })
 }
