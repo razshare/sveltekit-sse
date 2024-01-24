@@ -47,11 +47,6 @@ and consume it on your client with:
 {$value}
 ```
 
-> [!NOTE]
-> 1. Multiple sources connecting to the same path will use the same cached connection.
-> 2. When the readable store becomes inactive, meaning when the last subscriber unsubscribes from the store, the background connection is closed.\
-> 3. (Then) When the first subscription is issued to the store, the store will attempt to connect (again) to the server.
-
 ## Multiple events
 
 All major browsers will limit the number of parallel http connections.
@@ -226,3 +221,12 @@ You can parse incoming messages from the source as json using `source::select::j
 
 When an parsing error occurs, `onJsonParseError` is invoked.\
 Whatever this function returns will become the new value of the store, in the example above `previousParsedValue`, which is the previous (valid) value of the store.
+
+
+## Other notes
+
+> [!NOTE]
+> 1. Multiple sources connecting to the same path will use the same cached connection.
+> 2. When the readable store becomes inactive, meaning when the last subscriber unsubscribes from the store, the background connection is closed.
+> 3. (Then) When the first subscription is issued to the store, the store will attempt to connect (again) to the server.
+> 4. This note applies to [single event source](#sveltekit-sse), [multiple events sources](#multiple-evennts), [transform](#transform) and [json](#json) modifiers.
