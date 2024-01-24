@@ -245,11 +245,11 @@ export function stream(resource, options = false) {
         return
       }
       const listeners = events.get(type) ?? []
-      const listeners_replacement = listeners.filter(function pass(
-        listener_local,
-      ) {
-        return listener_local !== listener
-      })
+      const listeners_replacement = listeners.filter(
+        function pass(listener_local) {
+          return listener_local !== listener
+        },
+      )
       events.set(type, listeners_replacement)
     },
     /**

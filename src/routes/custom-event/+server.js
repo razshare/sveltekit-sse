@@ -4,9 +4,9 @@ import { event } from '$lib/event.js'
  * @param {number} milliseconds
  * @returns
  */
-const delay = function run(milliseconds) {
-  return new Promise(function run(r) {
-    return setTimeout(r, milliseconds)
+function delay(milliseconds) {
+  return new Promise(function run(resolve) {
+    setTimeout(resolve, milliseconds)
   })
 }
 
@@ -14,9 +14,9 @@ export function GET() {
   return event(async function run(emit) {
     // eslint-disable-next-line no-constant-condition
     while (true) {
-      emit(`/custom-event says \n ${Date.now()}`)
-      // emit(`/custom-event says\n hello`)
-      await delay(300)
+      emit(`/custom-event says: ${Date.now()}`)
+      // emit(`/custom-event says: hello`)
+      await delay(1000)
     }
   }).toResponse()
 }

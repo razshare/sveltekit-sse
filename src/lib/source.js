@@ -102,7 +102,7 @@ function createStore(resource, options, eventName, readables, state) {
      *
      * @param {import('./stream').Event} event
      */
-    const listener = function run(event) {
+    function listener(event) {
       set(event.data)
     }
 
@@ -171,6 +171,21 @@ function createTransformer(resource, options, eventName) {
  * @callback SubscriberCallback
  * @param {string} payload
  * @returns {void|PromiseLike<void>}
+ */
+
+/**
+ * @template T
+ * @typedef OnJsonParseErrorPayload
+ * @property {Error} error
+ * @property {string} currentRawValue
+ * @property {null|T} previousParsedValue
+ */
+
+/**
+ * @template T
+ * @callback OnJsonParseError<T>
+ * @param {OnJsonParseErrorPayload<T>} payload
+ * @returns {null|T|PromiseLike<null|T>}
  */
 
 /**
@@ -285,6 +300,18 @@ export function source(resource, options = false) {
     select(eventName) {
       if (!IS_BROWSER) {
         return {
+          /**
+           * Parse each message of the stream as JSON and wrap them in a readable store.
+           * @template [T = any]
+           * @param {false|OnJsonParseError<T>} onJsonParseError a callback that will be invoked whenever an error occurs while parsing the JSON.
+           * @returns {import("svelte/store").Readable<null|T>} a readable store that will emit the parsed JSON or `null` whenever an error occurs while parsing the JSON.
+           */
+          json(onJsonParseError = false) {
+            if (onJsonParseError) {
+              return readable(null)
+            }
+            return readable(null)
+          },
           subscribe: readable('').subscribe,
           /**
            *
@@ -328,6 +355,13 @@ export function source(resource, options = false) {
       }
 
       return {
+        /**
+         * Parse each message of the stream as JSON and wrap them in a readable store.
+         * @template [T = any]
+         * @param {false|OnJsonParseError<T>} onJsonParseError a callback that will be invoked whenever an error occurs while parsing the JSON.
+         * @returns {import("svelte/store").Readable<null|T>} a readable store that will emit the parsed JSON or `null` whenever an error occurs while parsing the JSON.
+         */
+        json: this.json,
         subscribe: event.subscribe,
         /**
          * Transform the stream into a readable store.
@@ -339,5 +373,88 @@ export function source(resource, options = false) {
      * Transform the stream into a readable store.
      */
     transform: createTransformer(resource, options, 'message'),
+    /**
+     * Parse each message of the stream as JSON and wrap them in a readable store.
+     * @template [T = any]
+     * @param {false|OnJsonParseError<T>} onJsonParseError a callback that will be invoked whenever an error occurs while parsing the JSON.
+     * @returns {import("svelte/store").Readable<null|T>} a readable store that will emit the parsed JSON or `null` whenever an error occurs while parsing the JSON.
+     */
+    json(onJsonParseError = false) {
+      if (!IS_BROWSER) {
+        return readable(null)
+      }
+      const transformed = this.transform(
+        /**
+         * @param {ReadableStream<string>} data
+         * @returns {import("svelte/store").Readable<null|T>}}
+         */
+        function run(data) {
+          /**
+           * @type {null|T}
+           */
+          let previousParsedValue = null
+          const reader = data.getReader()
+          /**
+           * @type {import('svelte/store').Readable<null|T>}
+           */
+          return readable(
+            previousParsedValue,
+            /**
+             * @type {import('svelte/store').StartStopNotifier<null|T>}
+             */
+            function start(set) {
+              const read = async function run() {
+                try {
+                  const { done, value } = await reader.read()
+                  if (done) {
+                    return
+                  }
+                  try {
+                    previousParsedValue = JSON.parse(value)
+                    set(previousParsedValue)
+                  } catch (error) {
+                    if (!onJsonParseError) {
+                      console.error(error)
+                      set(null)
+                      return
+                    }
+                    set(
+                      await onJsonParseError({
+                        // @ts-ignore
+                        error,
+                        currentRawValue: value,
+                        previousParsedValue,
+                      }),
+                    )
+                  }
+                  read()
+                } catch (error) {
+                  if (!onJsonParseError) {
+                    console.error(error)
+                    set(null)
+                    return
+                  }
+                  set(
+                    await onJsonParseError({
+                      // @ts-ignore
+                      error,
+                      currentRawValue: '',
+                      previousParsedValue,
+                    }),
+                  )
+                }
+              }
+              read()
+              return function stop() {
+                disconnect(resource)
+                reader.cancel()
+              }
+            },
+          )
+        },
+      )
+
+      return transformed
+    },
   }
 }

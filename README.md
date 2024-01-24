@@ -7,8 +7,6 @@ Install with:
 ```sh
 npm i -D sveltekit-sse
 ```
-> [!WARNING]  
-> previously `npm i -D sveltekit-server-sent-events`
 
 
 Create your server sent event with:
@@ -35,7 +33,6 @@ export function GET() {
     }
   }).toResponse()
 }
-
 ```
 
 and consume it on your client with:
@@ -46,6 +43,7 @@ and consume it on your client with:
   import { source } from 'sveltekit-sse'
   const value = source('/custom-event')
 </script>
+
 {$value}
 ```
 
@@ -199,4 +197,24 @@ You can reconnect to the stream whenever the stream closes by invoking `Event::c
 
 </script>
 {$data}
+```
+
+## Json
+
+You can parse incoming messages from the source as json using `source::select::json`.
+
+
+```svelte
+<script>
+  import { source } from 'sveltekit-sse'
+
+  const connection = source('/custom-event')
+  const json = connection1.select('message').json(
+    function onJsonParseError({error, currentRawValue, previousParsedValue}){
+      console.error(`Could not parse "${currentRawValue}" as json.`, error)
+      return previousParsedValue
+    }
+  )
+  $: console.log({$json})
+</svelte>
 ```

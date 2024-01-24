@@ -9,11 +9,12 @@
     "skipLibCheck": true,
     "sourceMap": true,
     "strict": true,
+    "types": ["bun-types"],
     "isolatedModules": true,
     "lib": ["esnext", "DOM", "DOM.Iterable"],
     "moduleResolution": "node",
     "module": "esnext",
     "target": "esnext",
-    "ignoreDeprecations": "5.0"
-  }
+    "ignoreDeprecations": "5.0",
+  },
 }

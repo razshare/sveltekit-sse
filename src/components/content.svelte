@@ -1,16 +1,16 @@
 <script>
   import { source } from '$lib/source.js'
 
-  const connection1 = source('/custom-event')
-  connection1.onClose(function run({ connect }) {
+  const customEvent = source('/custom-event')
+  customEvent.onClose(function run({ connect }) {
     console.log('stream closed, reconnecting')
     connect()
   })
   setTimeout(function run() {
-    connection1.close()
+    customEvent.close()
   }, 5000)
-  const single1 = connection1.select('message')
-  const transformed1 = single1.transform(
+  const single1 = customEvent.select('message')
+  const transformed = single1.transform(
     /**
      *
      * @param {ReadableStream<string>} stream
@@ -39,7 +39,7 @@
         },
       }
 
-      const start = async function run() {
+      async function start() {
         /**
          * @type {ReadableStreamReadResult<string>}
          */
@@ -57,23 +57,34 @@
     },
   )
 
-  transformed1.subscribe(function watch(value) {
+  transformed.subscribe(function watch(value) {
     console.log({ value })
   })
 
-  const connection2 = source('/events')
-  const multiple1 = connection2.select('event-1')
-  const multiple2 = connection2.select('event-2')
-  const multiple3 = connection2.select('event-3')
+  const events = source('/events')
+  const event1 = events.select('event-1')
+  const event2 = events.select('event-2')
+  const event3 = events.select('event-3')
+  const event4 = events
+    .select('event-4')
+    .json(function onJsonParseError({
+      error,
+      currentRawValue,
+      previousParsedValue,
+    }) {
+      console.warn(
+        `[!!! THIS WARNING IS INTENDED !!!] Could not parse "${currentRawValue}" as json.`,
+        error.message,
+      )
+      return previousParsedValue
+    })
 </script>
 
-<h3>1 stream & 1 event</h3>
-<pre>{$single1}</pre>
+<h3>One event over one stream</h3>
+{$single1}
 <br />
-<h3>1 stream & 3 events</h3>
-<pre>{$multiple1}</pre>
-<br />
-<pre>{$multiple2}</pre>
-<br />
-<pre>{$multiple3}</pre>
-<br />
+<h3>Four events over a single stream</h3>
+{$event1}<br />
+{$event2}<br />
+{$event3}<br />
+{JSON.stringify($event4)}<br />

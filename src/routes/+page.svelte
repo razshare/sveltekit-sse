@@ -1,4 +1,15 @@
-<h1>Welcome to SvelteKit</h1>
-<p>
-  Visit <a href="https://kit.svelte.dev">kit.svelte.dev</a> to read the documentation
-</p>
+<script>
+  import Content from '../components/content.svelte'
+  let counter = 0
+  function increaseCounter() {
+    counter += 1
+  }
+</script>
+
+<button on:click={increaseCounter}>
+  <span>Reload all components</span>
+</button>
+
+{#key counter}
+  <Content />
+{/key}
