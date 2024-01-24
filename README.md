@@ -209,7 +209,7 @@ You can parse incoming messages from the source as json using `source::select::j
   import { source } from 'sveltekit-sse'
 
   const connection = source('/custom-event')
-  const json = connection1.select('message').json(
+  const json = connection.select('message').json(
     function onJsonParseError({error, currentRawValue, previousParsedValue}){
       console.error(`Could not parse "${currentRawValue}" as json.`, error)
       return previousParsedValue  // this will be the new value of the store
