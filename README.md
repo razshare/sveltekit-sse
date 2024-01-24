@@ -229,4 +229,4 @@ Whatever this function returns will become the new value of the store, in the ex
 > 1. Multiple sources connecting to the same path will use the same cached connection.
 > 2. When the readable store becomes inactive, meaning when the last subscriber unsubscribes from the store, the background connection is closed.
 > 3. (Then) When the first subscription is issued to the store, the store will attempt to connect (again) to the server.
-> 4. This note applies to [single event source](#sveltekit-sse), [multiple events sources](#multiple-evennts), [transform](#transform) and [json](#json) modifiers.
+> 4. This note applies to [single event sources](#sveltekit-sse), [multiple events sources](#multiple-evennts), [transform](#transform) and [json](#json) modifiers.
