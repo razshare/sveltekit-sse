@@ -219,7 +219,7 @@ You can parse incoming messages from the source as json using `source::select::j
 </svelte>
 ```
 
-When an parsing error occurs, `onJsonParseError` is invoked.\
+When a parsing error occurs, `onJsonParseError` is invoked.\
 Whatever this function returns will become the new value of the store, in the example above `previousParsedValue`, which is the previous (valid) value of the store.
 
 
