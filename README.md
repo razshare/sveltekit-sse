@@ -212,9 +212,12 @@ You can parse incoming messages from the source as json using `source::select::j
   const json = connection1.select('message').json(
     function onJsonParseError({error, currentRawValue, previousParsedValue}){
       console.error(`Could not parse "${currentRawValue}" as json.`, error)
-      return previousParsedValue
+      return previousParsedValue  // this will be the new value of the store
     }
   )
   $: console.log({$json})
 </svelte>
 ```
+
+When an parsing error occurs, `onJsonParseError` is invoked.\
+Whatever this function returns will become the new value of the store, in the example above `previousParsedValue`, which is the previous (valid) value of the store.
