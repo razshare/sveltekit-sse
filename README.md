@@ -340,6 +340,10 @@ export function GET() {
 }
 ```
 
+After the store is set to `false` the event stream and connection will both close immediately.
+
+> [!NOTE]
+> This mean you should not emit anything after unlocking the event, you will get an error from the underlying `ReadableStream`, which by that point is closed.
 
 ## Other notes
 
