@@ -270,7 +270,7 @@ Whatever this function returns will become the new value of the store, in the ex
 
 ## Locking
 
-More often than not for an SSE endpoint to be useful you usually need to keep the connection alive for a long periods of time.
+More often than not for an SSE endpoint to be useful you usually need to keep the connection alive for long periods of time.
 
 The default behavior for any event is to close the connection immediately as soon as your event callback resolves.
 
