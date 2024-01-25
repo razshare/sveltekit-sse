@@ -319,7 +319,7 @@ Both `event` and `events` take a second parameter, an `EventsOptions` object wit
  */
 ```
 
-When `locked` is a valid writable store the event will automatically enter a locked state and will wait for the `locked` store to be set to `false`.
+When `locked` is a valid writable store, the event will automatically enter a locked state and will wait for the `locked` store to be set to `false`.
 
 ```js
 export function GET() {
@@ -343,7 +343,8 @@ export function GET() {
 After the store is set to `false` the event stream and connection will both close immediately.
 
 > [!NOTE]
-> This mean you should not emit anything after unlocking the event, you will get an error from the underlying `ReadableStream`, which by that point is closed.
+> This mean you should not emit anything after unlocking the event.\
+> If you do, you'll get an error from the underlying `ReadableStream`, which by that point is closed.
 
 ## Other notes
 
