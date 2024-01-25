@@ -34,6 +34,25 @@ export function GET() {
   }).toResponse()
 }
 ```
+> [!NOTE]
+> The infinite loop is of great importance in this case, as it prevents the response to complete and keeps the connection to the client open.\
+> You can end the connection at any time by `return`ing or `break`ing the loop
+> ```js
+> export function GET() {
+>   let i = 0
+>   return event(async function run(emit){
+>     while (true) {
+>       emit(`${Date.now()}`)
+>       await delay(1000)
+>       if(9 === i) {
+>           return
+>       }
+>       i++
+>     }
+>   }).toResponse()
+> }
+> ```
+> This will complete the response after 10 iterations.
 
 and consume it on your client with:
 
