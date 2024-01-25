@@ -68,17 +68,17 @@ export function GET() {
       let i = 0
       return event(async function run(emit){
           await new Promise(function run(stop){  // this line will prevent the callback from resolving
-              setInterval(function run(){
+              while (i < 10) {
                   emit(`${Date.now()}`)
-                  if(9 === i) {
-                      stop()  // this will resolve the promise, thus the callback too
-                  }
+                  await delay(1000)
                   i++
-              }, 1000)
+              }
+              stop()  // if you omit this line, the promise will not resolve and the connection will remain open
           })
       }).toResponse()
   }
   ```
+  Without calling `stop()`, even though the `while` loop is not infinite anymore, the connection will remain open and you will leak memory this way.
 </details>
 
 and consume the source on your client with:
