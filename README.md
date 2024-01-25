@@ -38,9 +38,9 @@ export function GET() {
 <details>
   <summary>(expand for more details)</summary>
 
-  The stream and http connection will end whenever the callback passed to `event()` returns.\
+  The stream and http connection will end whenever the callback passed to `event()` resolves.\
   \
-  The infinite loop is of great importance in this case because it prevents the callback to complete and keeps the connection to the client open.\
+  The infinite loop is of great importance in this case because it prevents the callback from resolving and keeps the connection to the client open.\
   You can end the connection at any time by `return`ing or `break`ing the loop
   ```js
   export function GET() {
