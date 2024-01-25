@@ -58,6 +58,27 @@ export function GET() {
   }
   ```
   This will complete the response after 10 iterations.
+
+  You don't have to use an infinite loop, you can achieve the same result using any other kind of semaphore-like behavior.
+
+  For example using `Promise`
+
+  ```js
+  export function GET() {
+      let i = 0
+      return event(async function run(emit){
+          await new Promise(function run(stop){  // this line will prevent the callback from resolving
+              setInterval(function run(){
+                  emit(`${Date.now()}`)
+                  if(9 === i) {
+                      stop()  // this will resolve the promise, thus the callback too
+                  }
+                  i++
+              }, 1000)
+          })
+      }).toResponse()
+  }
+  ```
 </details>
 
 and consume the source on your client with:
