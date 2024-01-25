@@ -1,4 +1,5 @@
 import { event } from '$lib/event.js'
+import { writable } from 'svelte/store'
 
 /**
  * @param {number} milliseconds
@@ -11,12 +12,18 @@ function delay(milliseconds) {
 }
 
 export function GET() {
-  return event(async function run(emit) {
-    // eslint-disable-next-line no-constant-condition
-    while (true) {
-      emit(`/custom-event says: ${Date.now()}`)
-      // emit(`/custom-event says: hello`)
-      await delay(1000)
-    }
-  }).toResponse()
+  const locked = writable(true)
+  return event(
+    async function run(emit) {
+      for (let index = 0; index < 10; index++) {
+        console.log(`/custom-event says: ${Date.now()}`)
+        emit(`/custom-event says: ${Date.now()}`)
+        await delay(1000)
+      }
+      console.log(`/custom-event says: BYE!`)
+      emit(`/custom-event says: BYE!`)
+      locked.set(false) // this will close the connection
+    },
+    { locked },
+  ).toResponse()
 }

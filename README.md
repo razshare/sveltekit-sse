@@ -8,7 +8,6 @@ Install with:
 npm i -D sveltekit-sse
 ```
 
-
 Create your server sent event with:
 
 ```js
@@ -19,14 +18,14 @@ import { event } from 'sveltekit-sse'
  * @param {number} milliseconds
  * @returns
  */
-function delay(milliseconds){
-  return new Promise(function run(r){
+function delay(milliseconds) {
+  return new Promise(function run(r) {
     setTimeout(r, milliseconds)
   })
 }
 
 export function GET() {
-  return event(async function run(emit){
+  return event(async function run(emit) {
     while (true) {
       emit(`${Date.now()}`)
       await delay(1000)
@@ -109,14 +108,14 @@ import { events } from 'sveltekit-sse'
  * @param {number} milliseconds
  * @returns
  */
-function delay(milliseconds){
-  return new Promise(function run(r){
+function delay(milliseconds) {
+  return new Promise(function run(r) {
     setTimeout(r, milliseconds)
   })
 }
 
 export function GET() {
-  return events(async function run(emit){
+  return events(async function run(emit) {
     while (true) {
       emit('event-1', `/events (1) says: ${Date.now()}`)
       emit('event-2', `/events (2) says: ${Date.now()}`)
@@ -173,8 +172,8 @@ Here's an example how to use it.
           state.listeners.push(callback)
         }
 
-        return function stop(){
-          state.listeners = state.listeners.filter(function pass(value){
+        return function stop() {
+          state.listeners = state.listeners.filter(function pass(value) {
             return value !== callback
           })
         }
@@ -184,7 +183,7 @@ Here's an example how to use it.
     const listen = async function () {
       let value = ''
       while (({ value } = await reader.read())) {
-        state.listeners.forEach(function run(callback){
+        state.listeners.forEach(function run(callback) {
           callback(value)
         })
       }
@@ -195,10 +194,9 @@ Here's an example how to use it.
     return store
   })
 
-  $: console.log({$transformed})
+  $: console.log({ $transformed })
 </script>
 ```
-
 
 ## Custom Headers
 
@@ -215,12 +213,13 @@ The following will set a `Authorization: Bearer ...` header to the underlying ht
 <script>
   import { source } from 'sveltekit-sse'
 
-  const data = source("/event", {
+  const data = source('/event', {
     headers: {
-      "Authorization": "Bearer ..."
-    }
+      Authorization: 'Bearer ...',
+    },
   })
 </script>
+
 {$data}
 ```
 
@@ -240,15 +239,14 @@ You can reconnect to the stream whenever the stream closes by invoking `Event::c
   setTimeout(function run() {
     data.close()
   }, 5000)
-
 </script>
+
 {$data}
 ```
 
 ## Json
 
 You can parse incoming messages from the source as json using `source::select::json`.
-
 
 ```svelte
 <script>
@@ -268,10 +266,10 @@ You can parse incoming messages from the source as json using `source::select::j
 When a parsing error occurs, `onJsonParseError` is invoked.\
 Whatever this function returns will become the new value of the store, in the example above `previousParsedValue`, which is the previous (valid) value of the store.
 
-
 ## Other notes
 
 > [!NOTE]
+>
 > 1. Multiple sources connecting to the same path will use the same cached connection.
 > 2. When the readable store becomes inactive, meaning when the last subscriber unsubscribes from the store, the background connection is closed.
 > 3. (Then) When the first subscription is issued to the store, the store will attempt to connect (again) to the server.

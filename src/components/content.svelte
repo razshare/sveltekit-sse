@@ -3,12 +3,11 @@
 
   const customEvent = source('/custom-event')
   customEvent.onClose(function run({ connect }) {
-    console.log('stream closed, reconnecting')
-    connect()
+    console.log('stream closed, reconnecting in 2 seconds...')
+    setTimeout(function run() {
+      connect()
+    }, 2000)
   })
-  setTimeout(function run() {
-    customEvent.close()
-  }, 5000)
   const single1 = customEvent.select('message')
   const transformed = single1.transform(
     /**
@@ -65,19 +64,17 @@
   const event1 = events.select('event-1')
   const event2 = events.select('event-2')
   const event3 = events.select('event-3')
-  const event4 = events
-    .select('event-4')
-    .json(function onJsonParseError({
-      error,
-      currentRawValue,
-      previousParsedValue,
-    }) {
-      console.warn(
-        `[!!! THIS WARNING IS INTENDED !!!] Could not parse "${currentRawValue}" as json.`,
-        error.message,
-      )
-      return previousParsedValue
-    })
+  const event4 = events.select('event-4').json(function onJsonParseError({
+    error,
+    currentRawValue,
+    previousParsedValue,
+  }) {
+    console.warn(
+      `[!!! THIS WARNING IS INTENDED !!!] Could not parse "${currentRawValue}" as json.`,
+      error.message,
+    )
+    return previousParsedValue
+  })
 </script>
 
 <h3>One event over one stream</h3>

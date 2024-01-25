@@ -24,7 +24,12 @@
 /**
  * @callback ProducerOfManyEvents
  * @param {EmitterOfManyEvents} emit
- * @returns {void}
+ * @returns {void|PromiseLike<void>}
+ */
+
+/**
+ * @typedef EventsOptions
+ * @property {false|import("svelte/store").Writable<boolean>} locked
  */
 
 /**
@@ -72,14 +77,32 @@ function createEmitter(controller) {
 /**
  * @param {ProducerOfManyEvents} producer
  * @param {Array<OnCancelCallback>} onCancel
+ * @param {EventsOptions} options
  * @returns {ReadableStream<string>}
  */
-function createStream(producer, onCancel) {
+function createStream(producer, onCancel, options) {
   return new ReadableStream({
     async start(controller) {
+      if (options.locked) {
+        /**
+         * @type {import("svelte/store").Unsubscriber}
+         */
+        let unsubscribe = options.locked.subscribe(function run(locked) {
+          if (locked) {
+            return
+          }
+
+          unsubscribe()
+          controller.close()
+        })
+      }
+
       const customEmitter = createEmitter(controller)
       await producer(customEmitter)
-      controller.close()
+
+      if (!options.locked) {
+        controller.close()
+      }
     },
     async cancel() {
       // eslint-disable-next-line @typescript-eslint/no-this-alias
@@ -93,9 +116,10 @@ function createStream(producer, onCancel) {
 
 /**
  * Create one stream and emit multiple server sent events.
- * @param {ProducerOfManyEvents} producer
+ * @param {ProducerOfManyEvents} producer a callback that will be provided an `emit()` function which you can use to send data to the client.
+ * @param {EventsOptions} [options] options for the event.
  */
-export function events(producer) {
+export function events(producer, options = { locked: false }) {
   /** @type {Array<OnCancelCallback>} */
   const onCancel = []
   /** @type {Map<string, string>} */
@@ -144,7 +168,7 @@ export function events(producer) {
      */
     getStream() {
       if (!stream) {
-        stream = createStream(producer, onCancel)
+        stream = createStream(producer, onCancel, options)
       }
       return stream
     },
