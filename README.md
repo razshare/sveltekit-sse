@@ -78,6 +78,8 @@ export function GET() {
   }
   ```
   Without calling `stop()`, even though the `while` loop is not infinite anymore, the connection will remain open and you will leak memory this way.
+
+  Read more about this topic in the [locking section](#locking).
 </details>
 
 and consume the source on your client with:
@@ -265,6 +267,79 @@ You can parse incoming messages from the source as json using `source::select::j
 
 When a parsing error occurs, `onJsonParseError` is invoked.\
 Whatever this function returns will become the new value of the store, in the example above `previousParsedValue`, which is the previous (valid) value of the store.
+
+## Locking
+
+More often than not for an SSE endpoint to be useful you usually need to keep the connection alive for a long periods of time.
+
+The default behavior for any event is to close the connection immediately as soon as your event callback resolves.
+
+For example
+
+```js
+export function GET() {
+  return event(async function run(emit) {
+    emit('hello world')
+  }).toResponse()
+}
+```
+
+This endpoint will emit the string `hello world` and immediately close the connection.
+
+This is not very useful.
+
+Usually you need to consume data from your database or some other I/O resource over longer periods of time.\
+Regardless of the origin of your data, you most likely will need to keep the connection alive.
+
+One way of doing that is using a `Promise`
+```js
+export function GET() {
+  return event(async function run(emit) {
+    await new Promise(function run(stop){
+      // imagine `myIo` is some I/O data provider you need to consume
+      myIo.addEventListener("data", function run(data){
+        emit(data)
+      })
+      myIo.addEventListener("close", stop)
+      myIo.addEventListener("error", stop)
+    })
+  }).toResponse()
+}
+```
+
+This looks fine to me personally, but some might prefer a `more svelte-like` 
+way of doing things, that is: using `EventsOptions::locked`.
+
+Both `event` and `events` take a second parameter, an `EventsOptions` object with the following signature
+
+```js
+/**
+ * @typedef EventsOptions
+ * @property {false|import("svelte/store").Writable<boolean>} locked
+ */
+```
+
+When `locked` is a valid writable store the event will automatically enter a locked state and will wait for the `locked` store to be set to `false`.
+
+```js
+export function GET() {
+  const locked = writable(true)
+  return event(async function run(emit) {
+    myIo.addEventListener("data", function run(data){
+      emit(data)
+    })
+    myIo.addEventListener("close", function close(){
+      locked.set(false)
+    })
+    myIo.addEventListener("error", function error(){
+      locked.set(false)
+    })
+  },
+  {locked}
+  ).toResponse()
+}
+```
+
 
 ## Other notes
 
