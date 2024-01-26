@@ -118,10 +118,10 @@ function createStore(resource, options, eventName, readables, state) {
 }
 
 /**
- * @template To
+ * @template T
  * @callback TransformerCallback
  * @param {ReadableStream<string>} stream
- * @returns {import('svelte/store').Readable<To>}
+ * @returns {import('svelte/store').Readable<T>}
  */
 
 /**
@@ -211,6 +211,9 @@ export function source(resource, options = false) {
      * @returns {Promise<void>}
      */
     close() {
+      if (!IS_BROWSER) {
+        return Promise.resolve()
+      }
       return disconnect(resource)
     },
     /**
@@ -320,8 +323,10 @@ export function source(resource, options = false) {
            * @param {TransformerCallback<To>} callback
            * @returns {import('svelte/motion').Readable<To>}
            */
-          transform(callback) {
-            callback
+          transform(
+            // eslint-disable-next-line @typescript-eslint/no-unused-vars
+            callback,
+          ) {
             // @ts-ignore
             return readable('')
           },
