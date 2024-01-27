@@ -1,5 +1,5 @@
 <script>
-  import Content from '../components/content.svelte'
+  import Example from '../components/example.svelte'
   let counter = 0
   function increaseCounter() {
     counter += 1
@@ -11,5 +11,5 @@
 </button>
 
 {#key counter}
-  <Content />
+  <Example />
 {/key}

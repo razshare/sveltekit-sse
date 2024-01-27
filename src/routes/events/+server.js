@@ -1,6 +1,38 @@
 import { events } from '$lib/events.js'
 
 /**
+ * @typedef Quote
+ * @property {string} id
+ * @property {string} value
+ */
+
+/**
+ * @type {Array<string>}
+ */
+const CAT_QUOTES = [
+  '"Cats are connoisseurs of comfort." - James Herriot',
+  '"Just watching my cats can make me happy." - Paula Cole',
+  '"I\'m not sure why I like cats so much. I mean, they\'re really cute obviously. They are both wild and domestic at the same time." - Michael Showalter',
+  '"You can not look at a sleeping cat and feel tense." - Jane Pauley',
+  '"The phrase \'domestic cat\' is an oxymoron." - George Will',
+  '"One cat just leads to another." - Ernest Hemingway',
+]
+
+/**
+ *
+ * @returns {Array<Quote>}
+ */
+function findAThousandCatQuotes() {
+  return Array(1000)
+    .fill(0)
+    .map(function pass(_, index) {
+      const key = Math.floor(Math.random() * CAT_QUOTES.length)
+      const quote = CAT_QUOTES[key]
+      return { id: `item-${index}`, value: quote }
+    })
+}
+
+/**
  * @param {number} milliseconds
  * @returns
  */
@@ -10,26 +42,23 @@ function delay(milliseconds) {
   })
 }
 
-export function GET() {
-  let sendFakeJsonError = true
-  return events(async function run(emit) {
-    // eslint-disable-next-line no-constant-condition
-    while (true) {
-      let stringified
+/**
+ * Send some data to the client
+ * @param {{emit:import('$lib/events.js').EmitterOfManyEvents}} payload
+ */
+async function dumpData({ emit }) {
+  for (let i = 0; i < 10; i++) {
+    const catQuotes = findAThousandCatQuotes()
+    const stringifiedCatQuote = JSON.stringify(catQuotes)
+    emit('thousand-cat-quotes', stringifiedCatQuote)
+    await delay(1000)
+  }
+}
 
-      if (sendFakeJsonError) {
-        stringified = 'this is not json'
-        sendFakeJsonError = false
-      } else {
-        stringified = JSON.stringify({ hello: 'world', time: Date.now() })
-      }
-      emit('event-1', `/events (1) says\n ${Date.now()}`)
-      await delay(1000)
-      emit('event-2', `/events (2) says\n ${Date.now()}`)
-      await delay(1000)
-      emit('event-3', `/events (3) says\n ${Date.now()}`)
-      await delay(1000)
-      emit('event-4', stringified)
-    }
+export function GET() {
+  return events(async function run(emit) {
+    await new Promise(function start(stop) {
+      dumpData({ emit }).then(stop)
+    })
   }).toResponse()
 }

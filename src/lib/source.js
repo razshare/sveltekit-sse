@@ -3,15 +3,9 @@ import { CLOSED, stream } from './stream'
 import { IS_BROWSER } from './constants'
 
 /**
- * @typedef Reference
- * @property {ReturnType<stream>} eventSource,
- * @property {number} connectionsCounter,
- */
-
-/**
- * @type {Map<string, Reference>}
+ * @type {Map<string, import('./types').Connected>}
  * */
-const references = new Map()
+const connected = new Map()
 
 /**
  *
@@ -19,7 +13,7 @@ const references = new Map()
  */
 async function disconnect(resource) {
   const url = `${resource}`
-  const reference = references.get(url)
+  const reference = connected.get(url)
   if (reference) {
     const { eventSource } = reference
 
@@ -34,29 +28,27 @@ async function disconnect(resource) {
     }
 
     if (reference.connectionsCounter === 0) {
-      references.delete(url)
+      connected.delete(url)
     }
   }
 }
 
 /**
- *
- * @param {RequestInfo|URL} resource path to the stream.
- * @param {false|import('./stream').Options} options options for the underlying http request.
+ * @type {import('./types').Connect}
  */
 function connect(resource, options = false) {
   const url = `${resource}`
-  if (!references.has(url)) {
+  if (!connected.has(url)) {
     const eventSource = stream(resource, options)
     const freshReference = {
       eventSource,
       connectionsCounter: 0,
     }
-    references.set(url, freshReference)
+    connected.set(url, freshReference)
     return freshReference
   }
 
-  const cachedReference = references.get(url)
+  const cachedReference = connected.get(url)
   if (!cachedReference) {
     throw new Error(`Could not find reference for ${url}.`)
   }
@@ -69,7 +61,7 @@ function connect(resource, options = false) {
       eventSource,
       connectionsCounter: 0,
     }
-    references.set(url, freshReference)
+    connected.set(url, freshReference)
 
     return freshReference
   }
@@ -84,23 +76,14 @@ function connect(resource, options = false) {
 }
 
 /**
- * @typedef SourceState
- * @property {number} eventsCounter
- */
-
-/**
- * @param {RequestInfo|URL} resource path to the stream.
- * @param {false|import('./stream').Options} options options for the underlying http request.
- * @param {string} eventName
- * @param {Map<string, import('svelte/store').Readable<string>>} readables
- * @param {SourceState} state
+ * @type {import('./types').CreateStore}
  */
 function createStore(resource, options, eventName, readables, state) {
   const { eventSource } = connect(resource, options)
   return readable('', function start(set) {
     /**
      *
-     * @param {import('./stream').Event} event
+     * @param {import('./types').Event} event
      */
     function listener(event) {
       set(event.data)
@@ -119,27 +102,15 @@ function createStore(resource, options, eventName, readables, state) {
 
 /**
  * @template T
- * @callback TransformerCallback
- * @param {ReadableStream<string>} stream
- * @returns {import('svelte/store').Readable<T>}
- */
-
-/**
- * @param {RequestInfo|URL} resource path to the stream.
- * @param {false|import('./stream').Options} options options for the underlying http request.
- * @param {string} eventName
+ * @type {import('./types').CreateTransformer<T>}
  */
 function createTransformer(resource, options, eventName) {
-  /**
-   * @template To
-   * @param {TransformerCallback<To>} callback
-   */
   return function transform(callback) {
     if (!IS_BROWSER) {
       /**
-       * @type {To}
+       * @type {T}
        */
-      //@ts-ignore
+      // @ts-ignore
       const data = ''
 
       return readable(data)
@@ -162,43 +133,16 @@ function createTransformer(resource, options, eventName) {
 }
 
 /**
- * @callback OnErrorCallback
- * @param {Event} event
- * @returns {void|PromiseLike<void>}
- */
-
-/**
- * @callback SubscriberCallback
- * @param {string} payload
- * @returns {void|PromiseLike<void>}
- */
-
-/**
- * @template T
- * @typedef OnJsonParseErrorPayload
- * @property {Error} error
- * @property {string} currentRawValue
- * @property {null|T} previousParsedValue
- */
-
-/**
- * @template T
- * @callback OnJsonParseError<T>
- * @param {OnJsonParseErrorPayload<T>} payload
- * @returns {null|T|PromiseLike<null|T>}
- */
-
-/**
  * Consume a server sent event as a readable store.
  *
- * > **Note**: calling this multiple times using the same `resource` string will not create multiple streams, instead the same stream will be reused for all exposed events on the given `resource`.
- *
- * > **Note**: source values rendered on the server will always be initialized with blank (`''`).
- * @param {RequestInfo|URL} resource path to the stream.
- * @param {false|import('./stream').Options} options options for the underlying http request.
+ * > **Note**\
+ * > Calling this multiple times using the same `resource` string will not
+ * > create multiple streams, instead the same stream will be reused for all exposed
+ * > events on the given `resource`.
+ * @type {import('./types').Source}
  */
 export function source(resource, options = false) {
-  /** @type {SourceState} */
+  /** @type {import('./types').SourceState} */
   let state = {
     eventsCounter: 0,
   }
@@ -206,21 +150,12 @@ export function source(resource, options = false) {
   let readables = new Map()
 
   return {
-    /**
-     * Close the source connection.
-     * @returns {Promise<void>}
-     */
     close() {
       if (!IS_BROWSER) {
         return Promise.resolve()
       }
       return disconnect(resource)
     },
-    /**
-     * Subscribe to the default `message` event.
-     * @param {SubscriberCallback} callback
-     * @throws when Subscribing callback is not of type `function`.
-     */
     subscribe(callback) {
       if (!IS_BROWSER) {
         return readable('').subscribe(callback)
@@ -249,12 +184,6 @@ export function source(resource, options = false) {
 
       return message.subscribe(callback)
     },
-    /**
-     * Invoke `callback` whenever an error occurs.
-     * @param {import('./stream').ListenerCallback} callback
-     * @returns {ReturnType<source>}
-     * @throws when `callback` is not of type `function`.
-     */
     onError(callback) {
       if (!IS_BROWSER) {
         return this
@@ -266,17 +195,11 @@ export function source(resource, options = false) {
         )
       }
       const { eventSource } = connect(resource, options)
-      eventSource.onerror = function run(event) {
+      eventSource.addEventListener('error', function run(event) {
         callback(event)
-      }
+      })
       return this
     },
-    /**
-     * Invoke `callback` whenever the connection closes.
-     * @param {import('./stream').ListenerCallback} callback
-     * @returns {ReturnType<source>}
-     * @throws when `callback` is not of type `function`.
-     */
     onClose(callback) {
       if (!IS_BROWSER) {
         return this
@@ -288,27 +211,14 @@ export function source(resource, options = false) {
         )
       }
       const { eventSource } = connect(resource, options)
-      eventSource.onclose = function run(event) {
+      eventSource.addEventListener('error', function run(event) {
         callback(event)
-      }
+      })
       return this
     },
-    /**
-     * Select an event from the stream.
-     * @param {string} eventName name of the event
-     * @throws when `eventName` is not of type `string`.
-     * @throws when `eventName` is not found.
-     * @throws when `eventName` containst new lines (`\n`).
-     */
     select(eventName) {
       if (!IS_BROWSER) {
         return {
-          /**
-           * Parse each message of the stream as JSON and wrap them in a readable store.
-           * @template [T = any]
-           * @param {false|OnJsonParseError<T>} onJsonParseError a callback that will be invoked whenever an error occurs while parsing the JSON.
-           * @returns {import("svelte/store").Readable<null|T>} a readable store that will emit the parsed JSON or `null` whenever an error occurs while parsing the JSON.
-           */
           json(onJsonParseError = false) {
             if (onJsonParseError) {
               return readable(null)
@@ -316,13 +226,6 @@ export function source(resource, options = false) {
             return readable(null)
           },
           subscribe: readable('').subscribe,
-          /**
-           *
-           * Transform the stream into a readable store.
-           * @template To
-           * @param {TransformerCallback<To>} callback
-           * @returns {import('svelte/motion').Readable<To>}
-           */
           transform(
             // eslint-disable-next-line @typescript-eslint/no-unused-vars
             callback,
@@ -360,79 +263,42 @@ export function source(resource, options = false) {
       }
 
       return {
-        /**
-         * Parse each message of the stream as JSON and wrap them in a readable store.
-         * @template [T = any]
-         * @param {false|OnJsonParseError<T>} onJsonParseError a callback that will be invoked whenever an error occurs while parsing the JSON.
-         * @returns {import("svelte/store").Readable<null|T>} a readable store that will emit the parsed JSON or `null` whenever an error occurs while parsing the JSON.
-         */
         json: this.json,
         subscribe: event.subscribe,
-        /**
-         * Transform the stream into a readable store.
-         */
         transform: createTransformer(resource, options, eventName),
       }
     },
-    /**
-     * Transform the stream into a readable store.
-     */
+
     transform: createTransformer(resource, options, 'message'),
+
     /**
-     * Parse each message of the stream as JSON and wrap them in a readable store.
-     * @template [T = any]
-     * @param {false|OnJsonParseError<T>} onJsonParseError a callback that will be invoked whenever an error occurs while parsing the JSON.
-     * @returns {import("svelte/store").Readable<null|T>} a readable store that will emit the parsed JSON or `null` whenever an error occurs while parsing the JSON.
+     * @template T
      */
     json(onJsonParseError = false) {
       if (!IS_BROWSER) {
         return readable(null)
       }
-      const transformed = this.transform(
+      const transformed = this.transform(function run(data) {
         /**
-         * @param {ReadableStream<string>} data
-         * @returns {import("svelte/store").Readable<null|T>}}
+         * @type {null|T}
          */
-        function run(data) {
+        let previousParsedValue = null
+        const reader = data.getReader()
+        return readable(
+          previousParsedValue,
           /**
-           * @type {null|T}
+           * @type {import('svelte/store').StartStopNotifier<null|T>}
            */
-          let previousParsedValue = null
-          const reader = data.getReader()
-          /**
-           * @type {import('svelte/store').Readable<null|T>}
-           */
-          return readable(
-            previousParsedValue,
-            /**
-             * @type {import('svelte/store').StartStopNotifier<null|T>}
-             */
-            function start(set) {
-              const read = async function run() {
+          function start(set) {
+            const read = async function run() {
+              try {
+                const { done, value } = await reader.read()
+                if (done) {
+                  return
+                }
                 try {
-                  const { done, value } = await reader.read()
-                  if (done) {
-                    return
-                  }
-                  try {
-                    previousParsedValue = JSON.parse(value)
-                    set(previousParsedValue)
-                  } catch (error) {
-                    if (!onJsonParseError) {
-                      console.error(error)
-                      set(null)
-                      return
-                    }
-                    set(
-                      await onJsonParseError({
-                        // @ts-ignore
-                        error,
-                        currentRawValue: value,
-                        previousParsedValue,
-                      }),
-                    )
-                  }
-                  read()
+                  previousParsedValue = JSON.parse(value)
+                  set(previousParsedValue)
                 } catch (error) {
                   if (!onJsonParseError) {
                     console.error(error)
@@ -443,22 +309,36 @@ export function source(resource, options = false) {
                     await onJsonParseError({
                       // @ts-ignore
                       error,
-                      currentRawValue: '',
+                      currentRawValue: value,
                       previousParsedValue,
                     }),
                   )
                 }
+                read()
+              } catch (error) {
+                if (!onJsonParseError) {
+                  console.error(error)
+                  set(null)
+                  return
+                }
+                set(
+                  await onJsonParseError({
+                    // @ts-ignore
+                    error,
+                    currentRawValue: '',
+                    previousParsedValue,
+                  }),
+                )
               }
-              read()
-              return function stop() {
-                disconnect(resource)
-                reader.cancel()
-              }
-            },
-          )
-        },
-      )
-
+            }
+            read()
+            return function stop() {
+              disconnect(resource)
+              reader.cancel()
+            }
+          },
+        )
+      })
       return transformed
     },
   }
