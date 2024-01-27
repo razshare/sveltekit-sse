@@ -44,7 +44,7 @@ function delay(milliseconds) {
 
 /**
  * Send some data to the client
- * @param {{emit:import('$lib/events.js').EmitterOfManyEvents}} payload
+ * @param {{emit:import('$lib/types').EmitterOfManyEvents}} payload
  */
 async function dumpData({ emit }) {
   for (let i = 0; i < 10; i++) {

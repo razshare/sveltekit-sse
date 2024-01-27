@@ -323,3 +323,141 @@ export {}
  * > ```
  * @returns {Sourced<T>} Source connected.
  */
+
+/**
+ * @typedef EventsOptions
+ * @property {false|import("svelte/store").Writable<boolean>} locked
+ */
+
+/**
+ * @callback ProducerOfOneEvent
+ * @param {EmitterOfOneEvent} emit
+ * @returns {void}
+ */
+
+/**
+ * @callback ProducerOfManyEvents
+ * @param {EmitterOfManyEvents} emit
+ * @returns {void|PromiseLike<void>}
+ */
+
+/**
+ * @callback OnCancelCallback
+ * @param {UnderlyingDefaultSource<string>} stream
+ * @returns {void|PromiseLike<void>}
+ */
+
+/**
+ * Send data to the client.
+ * @callback EmitterOfOneEvent
+ * @param {string} data Data to send.
+ * @throws When `data` is not of type `string`.
+ * @returns {void}
+ */
+
+/**
+ * Send data to the client.
+ * @callback EmitterOfManyEvents
+ * @param {string} eventName Name of the event.
+ * @param {string} data Data to send.
+ * @throws When `eventname` or `data` are not of type `string`.
+ * @returns {void}
+ */
+
+/**
+ * @callback CreateEmitter
+ * @param {ReadableStreamDefaultController} controller
+ * @returns {EmitterOfManyEvents}
+ */
+
+/**
+ * @callback CreateStream
+ * @param {ProducerOfManyEvents} producer A callback that will be provided an `emit()` function which you can use to send data to the client.
+ * @param {Array<OnCancelCallback>} onCancel Do something when the stream is canceled.
+ * @param {EventsOptions} options
+ * @returns {ReadableStream<string>} Options for the event.
+ */
+
+/**
+ * Create one stream and emit multiple server sent events.
+ * @callback CreatorOfManyEventsGateway
+ * @param {ProducerOfManyEvents} producer A callback that will be provided an `emit()` function which you can use to send data to the client.
+ * @param {EventsOptions} [options] Options for the event.
+ * @returns {EventsGateway}
+ */
+
+/**
+ * Create one stream and emit one server sent event.
+ *
+ * > **Note**\
+ * > This will use the default event, which is `message`.
+ * @callback CreatorOfOneEventGateway
+ * @param {ProducerOfOneEvent} producer A callback that will be provided an `emit()` function which you can use to send data to the client.
+ * @param {EventsOptions} [options] Options for the event.
+ * @returns {EventsGateway}
+ */
+
+/**
+ * @typedef EventsGateway
+ * @property {SetHeader} setHeader Set a response header.
+ *
+ * ### Note
+ * The following headers are set by default for all events:
+ * ```json
+ * {
+ *   "Cache-Control": "no-store",
+ *   "Content-Type": "text/event-stream",
+ *   "Connection": "keep-alive",
+ * }
+ * ```
+ *
+ * ### Warning
+ * Overwriting the default headers is allowed.
+ *
+ * Overwriting header `Content-Type` to something other than `text/event-stream` will break the SSE contract and the event will stop working as intended.
+ * @property {OnCancel} onCancel Do something after the stream has been canceled.
+ * @property {GetStream} getStream Get the underlying stream used by the event.
+ * @property {ToResponse} toResponse Build a `Response`.
+ */
+
+/**
+ * Set a response header.
+ *
+ * ### Note
+ * The following headers are set by default for all events:
+ * ```json
+ * {
+ *   "Cache-Control": "no-store",
+ *   "Content-Type": "text/event-stream",
+ *   "Connection": "keep-alive",
+ * }
+ * ```
+ *
+ * ### Warning
+ * Overwriting the default headers is allowed.
+ *
+ * Overwriting header `Content-Type` to something other than `text/event-stream` will break the SSE contract and the event will stop working as intended.
+ * @callback SetHeader
+ * @param {string} key
+ * @param {string} value
+ * @returns {EventsGateway}
+ */
+
+/**
+ * Do something after the stream has been canceled.
+ * @callback OnCancel
+ * @param {import("./types").OnCancelCallback} callback
+ * @returns {EventsGateway}
+ */
+
+/**
+ * Get the underlying stream used by the event.
+ * @callback GetStream
+ * @returns {ReadableStream<string>}
+ */
+
+/**
+ * Build a `Response`.
+ * @callback ToResponse
+ * @returns {Response}
+ */

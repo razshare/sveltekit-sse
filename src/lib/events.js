@@ -1,39 +1,5 @@
 /**
- * Send data to the client.
- * @callback EmitterOfOneEvent
- * @param {string} data
- * @throws when `data` is not of type `string`.
- * @returns {void}
- */
-
-/**
- * @callback ProducerOfOneEvent
- * @param {EmitterOfOneEvent} emit
- * @returns {void}
- */
-
-/**
- * Send data to the client.
- * @callback EmitterOfManyEvents
- * @param {string} eventName
- * @param {string} data
- * @throws when `eventname` or `data` are not of type `string`.
- * @returns {void}
- */
-
-/**
- * @callback ProducerOfManyEvents
- * @param {EmitterOfManyEvents} emit
- * @returns {void|PromiseLike<void>}
- */
-
-/**
- * @typedef EventsOptions
- * @property {false|import("svelte/store").Writable<boolean>} locked
- */
-
-/**
- * @param {ReadableStreamDefaultController} controller
+ * @type {import("./types").CreateEmitter}
  */
 function createEmitter(controller) {
   let id = 1
@@ -69,16 +35,7 @@ function createEmitter(controller) {
 }
 
 /**
- * @callback OnCancelCallback
- * @param {UnderlyingDefaultSource<string>} stream
- * @returns {void|PromiseLike<void>}
- */
-
-/**
- * @param {ProducerOfManyEvents} producer
- * @param {Array<OnCancelCallback>} onCancel
- * @param {EventsOptions} options
- * @returns {ReadableStream<string>}
+ * @type {import("./types").CreateStream}
  */
 function createStream(producer, onCancel, options) {
   return new ReadableStream({
@@ -116,11 +73,16 @@ function createStream(producer, onCancel, options) {
 
 /**
  * Create one stream and emit multiple server sent events.
- * @param {ProducerOfManyEvents} producer a callback that will be provided an `emit()` function which you can use to send data to the client.
- * @param {EventsOptions} [options] options for the event.
+ * @type {import('./types').CreatorOfManyEventsGateway}
  */
-export function events(producer, options = { locked: false }) {
-  /** @type {Array<OnCancelCallback>} */
+export function events(
+  producer,
+  options = {
+    /** @type {false} */
+    locked: false,
+  },
+) {
+  /** @type {Array<import("./types").OnCancelCallback>} */
   const onCancel = []
   /** @type {Map<string, string>} */
   const headers = new Map()
@@ -128,54 +90,20 @@ export function events(producer, options = { locked: false }) {
   let stream = undefined
 
   return {
-    /**
-     * Set a response header.
-     *
-     * ### Note
-     * The following headers are set by default for all events:
-     * ```json
-     * {
-     *   "Cache-Control": "no-store",
-     *   "Content-Type": "text/event-stream",
-     *   "Connection": "keep-alive",
-     * }
-     * ```
-     *
-     * ### Warning
-     * Overwriting the default headers is allowed.
-     *
-     * Overwriting header `Content-Type` to something other than `text/event-stream` will break the SSE contract and the event will stop working as intended.
-     * @param {string} key
-     * @param {string} value
-     * @returns {ReturnType<events>}
-     */
     setHeader(key, value) {
       headers.set(key, value)
       return this
     },
-    /**
-     * Do something after the stream has been canceled.
-     * @param {OnCancelCallback} callback
-     * @returns {ReturnType<events>}
-     */
     onCancel(callback) {
       onCancel.push(callback)
       return this
     },
-    /**
-     * Get the underlying stream used by the event.
-     * @returns {ReadableStream<string>}
-     */
     getStream() {
       if (!stream) {
         stream = createStream(producer, onCancel, options)
       }
       return stream
     },
-    /**
-     * Build a `Response`.
-     * @returns {Response}
-     */
     toResponse() {
       return new Response(this.getStream(), {
         //@ts-ignore
