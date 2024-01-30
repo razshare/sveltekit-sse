@@ -229,7 +229,7 @@ The following will set a `Authorization: Bearer ...` header to the underlying ht
 
 You can reconnect to the stream whenever the stream closes by invoking `Event::connect`.
 
-```svelte
+```html
 <script>
   import { source } from 'sveltekit-sse'
 
