@@ -51,7 +51,7 @@ and consume the source on your client with:
 
 
 > [!CAUTION]
-> Due to how the [beacon api](#beacon) works, you must write all your logic within the `start()` function while on the server.\
+> Due to how the [beacon api](#beacon) works, you must write all your logic within the `start()` function while on the server.
 
 
 In other words, this is wrong
