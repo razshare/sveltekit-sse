@@ -118,7 +118,7 @@ function createTimeout({ context, lock, timeout }) {
  * @property {string} id
  * @property {import('svelte/store').Writable<boolean>} lock
  * @property {StreamContext} context
- * @property {number} [timeout]
+ * @property {number} timeout
  * @property {Cancel} [cancel]
  */
 
@@ -127,7 +127,7 @@ function createTimeout({ context, lock, timeout }) {
  * @param {CreateStreamPayload} payload
  * @returns
  */
-function createStream({ start, id, lock, context, cancel, timeout = 10000 }) {
+function createStream({ start, id, lock, context, cancel, timeout }) {
   return new ReadableStream({
     async start(controller) {
       // eslint-disable-next-line @typescript-eslint/no-this-alias
@@ -250,16 +250,22 @@ function createStream({ start, id, lock, context, cancel, timeout = 10000 }) {
  * - Calling `.cancel` on the underlying `ReadableStream`
  * - Calling `lock.set(false)`
  * - Timeout due to missing beacon signals
- * @property {number} [timeout] Expect a beacon from the client after `timeout` milliseconds.\
- * Every beacon resets this timeout.\
- * When the client fails to send a beacon and reset this timeout, the stream ends immediately.
+ * @property {number} [timeout] A countdown in `milliseconds`.\
+ * If it expires the stream ends immediately.\
+ * Each client can send a beacon to the server to reset this timeout and keep the stream online.\
+ * \
+ * Beacons request must include only the stream id as a query string
+ * ## Example
+ * ```http
+ * http://127.0.0.1:5757/events?
+ * ```
  */
 
 /**
  * Create one stream and emit multiple server sent events.
  * @param {EventsPayload} payload
  */
-export function events({ start, cancel, request, headers, timeout = 15000 }) {
+export function events({ start, cancel, request, headers, timeout = 7000 }) {
   /**
    * @type {StreamContext}
    */

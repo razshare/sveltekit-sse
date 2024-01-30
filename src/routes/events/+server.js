@@ -20,16 +20,12 @@ const CAT_QUOTES = [
 
 /**
  *
- * @returns {Array<Quote>}
+ * @returns {Quote}
  */
-function findAThousandCatQuotes() {
-  return Array(1000)
-    .fill(0)
-    .map(function pass(_, index) {
-      const key = Math.floor(Math.random() * CAT_QUOTES.length)
-      const quote = CAT_QUOTES[key]
-      return { id: `item-${index}`, value: quote }
-    })
+function findCatQuote() {
+  const index = Math.floor(Math.random() * CAT_QUOTES.length)
+  const quote = CAT_QUOTES[index]
+  return { id: `item-${index}`, value: quote }
 }
 
 /**
@@ -48,9 +44,9 @@ function delay(milliseconds) {
  */
 async function dumpData({ emit, lock }) {
   for (let i = 0; i < 10; i++) {
-    const catQuotes = findAThousandCatQuotes()
-    const stringifiedCatQuote = JSON.stringify(catQuotes)
-    const { error } = emit('thousands-of-cat-quotes', stringifiedCatQuote)
+    const catQuote = findCatQuote()
+    const stringifiedCatQuote = JSON.stringify(catQuote)
+    const { error } = emit('cat-quote', stringifiedCatQuote)
     if (error) {
       console.error(error.message)
       return

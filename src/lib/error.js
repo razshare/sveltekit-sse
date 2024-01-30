@@ -1,6 +1,7 @@
 /**
+ * @template [T=void]
  * @param {string|Error|unknown} value
- * @returns {import("./types").Unsafe<void>}
+ * @returns {import("./types").Unsafe<T>}
  */
 export function error(value) {
   if (value instanceof Error) {

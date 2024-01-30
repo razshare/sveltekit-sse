@@ -18,6 +18,7 @@ import { IS_BROWSER } from './constants'
 /**
  * Connection established.
  * @typedef Connected
+ * @property {RequestInfo|URL} resource Path to the stream.
  * @property {ReturnType<import('./stream').stream>} eventSource Stream has been established and this is information regarding the connection.
  * @property {number} connectionsCounter How many other clients are connected to the stream.
  * @property {()=>void} stopBeacon
@@ -29,10 +30,15 @@ import { IS_BROWSER } from './constants'
 const connected = new Map()
 
 /**
- * Close the source connection `resource`. This will trigger `close`.
- * @param {RequestInfo|URL} resource Path to the stream.
+ * @typedef DisconnectPayload
+ * @property {RequestInfo|URL} resource Path to the stream.
  */
-async function disconnect(resource) {
+
+/**
+ * Close the source connection `resource`. This will trigger `close`.
+ * @param {DisconnectPayload} payload
+ */
+async function disconnect({ resource }) {
   const url = `${resource}`
   const reference = connected.get(url)
   if (reference) {
@@ -58,7 +64,8 @@ async function disconnect(resource) {
 /**
  * @typedef ConnectPayload
  * @property {RequestInfo|URL} resource Path to the stream.
- * @property {number} [beacon]
+ * @property {number} [beacon] How often to send a beacon to the server in `milliseconds`.\
+ * Defaults to `5000 milliseconds`.
  * @property {Options} [options] Options for the underlying http request.
  */
 
@@ -67,7 +74,8 @@ async function disconnect(resource) {
  * @param {ConnectPayload} payload
  * @returns
  */
-function connect({ resource, beacon = 10000, options = {} }) {
+function connect({ resource, beacon = 5000, options = {} }) {
+  console.log(`Connecting to ${resource}`)
   const url = `${resource}`
   if (!connected.has(url)) {
     /**
@@ -88,6 +96,7 @@ function connect({ resource, beacon = 10000, options = {} }) {
           return
         }
         interval = setInterval(function run() {
+          console.log('sending beacon')
           navigator.sendBeacon(resource.toString() + '?' + id)
         }, beacon)
       },
@@ -106,6 +115,7 @@ function connect({ resource, beacon = 10000, options = {} }) {
     eventSource.addEventListener('error', stopBeacon)
 
     const freshReference = {
+      resource,
       eventSource,
       connectionsCounter: 0,
       stopBeacon,
@@ -125,6 +135,7 @@ function connect({ resource, beacon = 10000, options = {} }) {
   if (eventSource.readyState === CLOSED) {
     // const reconnectedEventSource = new EventSource(url)
     const freshReference = {
+      resource,
       eventSource,
       connectionsCounter: 0,
       stopBeacon,
@@ -151,12 +162,10 @@ function connect({ resource, beacon = 10000, options = {} }) {
 
 /**
  * @typedef CreateStorePayload
- * @property {RequestInfo|URL} resource Path to the stream.
- * @property {string} eventName
+ * @property {Connected} connected Connected insurance.
+ * @property {string} eventName Name of the event.
  * @property {SourceState} state State of the source.
  * @property {Map<string, import('svelte/store').Readable<string>>} readables
- * @property {number} [beacon]
- * @property {Options} [options] Options for the underlying http request.
  */
 
 /**
@@ -164,15 +173,8 @@ function connect({ resource, beacon = 10000, options = {} }) {
  * @param {CreateStorePayload} payload
  * @returns
  */
-function createStore({
-  resource,
-  options,
-  beacon,
-  eventName,
-  readables,
-  state,
-}) {
-  const { eventSource } = connect({ resource, options, beacon })
+function createStore({ connected, eventName, readables, state }) {
+  const { eventSource, resource } = connected
   return readable('', function start(set) {
     /**
      *
@@ -186,7 +188,7 @@ function createStore({
 
     return async function stop() {
       state.eventsCounter--
-      await disconnect(resource)
+      await disconnect({ resource })
       eventSource.removeEventListener(eventName, listener)
       readables.delete(eventName)
     }
@@ -195,22 +197,15 @@ function createStore({
 
 /**
  * @typedef CreateTransformerPayload
+ * @property {Connected} connected Connected insurance.
  * @property {string} eventName Name of the event.
- * @property {RequestInfo|URL} resource Path to the stream.
- * @property {number} [beacon]
- * @property {Options} [options] Options for the underlying http request.
  */
 
 /**
  * @param {CreateTransformerPayload} payload
  * @returns
  */
-function createTransformer({
-  resource,
-  eventName,
-  beacon = 10000,
-  options = {},
-}) {
+function createTransformer({ connected, eventName }) {
   /**
    * @template T
    * @param {(stream:ReadableStream<string>)=>import('svelte/store').Readable<T>} callback
@@ -227,7 +222,7 @@ function createTransformer({
       return readable(data)
     }
 
-    const { eventSource } = connect({ resource, beacon, options })
+    const { eventSource } = connected
     /**
      * @type {ReadableStream<string>}
      */
@@ -249,13 +244,23 @@ function createTransformer({
  */
 
 /**
- * Describes a json parse error.
+ * Describes the current parsed json and the previous json values.
  * @template T
- * @typedef OnJsonParseErrorPayload
- * @property {Error} error What went wrong.
- * @property {string} currentRawValue This raw string value that triggered this error.
- * @property {null|T} previousParsedValue This is the previous value of the store.
+ * @typedef JsonOrPayload
+ * @property {Error} error The error generated by `JSON.parse`.
+ * @property {string} raw This is the current raw string value, the one that triggered the error.
+ * @property {null|T} previous This is the previous value of the store.
  */
+
+/**
+ * @template T
+ * @param {JsonOrPayload<T>} payload
+ * @returns {null|T}
+ */
+function defaultJsonOrPredicate({ error, previous }) {
+  console.error(error)
+  return previous
+}
 
 /**
  * Consume a server sent event as a readable store.
@@ -265,7 +270,7 @@ function createTransformer({
  * > create multiple streams, instead the same stream will be reused for all exposed
  * > events on the given `resource`.
  * @typedef SourcePayload
- * @property {string} resource path to the stream.
+ * @property {string} from Path to the stream.
  * @property {import('./types').EventListener} [close] Do something whenever the connection closes.
  * @property {import('./types').EventListener} [error] Do something whenever there are errors.
  * @property {Options} [options] Options for the underlying http request.
@@ -273,17 +278,25 @@ function createTransformer({
  */
 
 /**
+ * Source a server sent event.
  *
+ * Multiple sources may share the same underlying connection if they use the same path (`from`).
+ * > ## Example
+ * > ```js
+ * > const connection = source({
+ * >  from: '/events',
+ * >  beacon: 1000,
+ * >  options: {
+ * >    headers: {
+ * >      'Authorization': `Bearer ${token}`
+ * >    }
+ * >  }
+ * > })
+ * > ```
  * @param {SourcePayload} payload
  * @returns
  */
-export function source({
-  resource,
-  close,
-  error,
-  beacon = 10000,
-  options = {},
-}) {
+export function source({ from, close, error, beacon = 5000, options = {} }) {
   /** @type {SourceState} */
   let state = {
     eventsCounter: 0,
@@ -291,7 +304,10 @@ export function source({
   /** @type {Map<string,import('svelte/store').Readable<string>>} */
   let readables = new Map()
 
-  const { eventSource } = connect({ resource, beacon, options })
+  const connected = connect({ resource: from, beacon, options })
+
+  const { eventSource } = connected
+
   if (error) {
     eventSource.addEventListener('error', error)
   }
@@ -305,47 +321,7 @@ export function source({
       if (!IS_BROWSER) {
         return Promise.resolve()
       }
-      return disconnect(resource)
-    },
-    /**
-     *
-     * @param {import('svelte/store').Subscriber<string>} callback Callback to inform of a value updates.
-     * @returns
-     */
-    subscribe(callback) {
-      if (!IS_BROWSER) {
-        return readable('').subscribe(callback)
-      }
-      const typeOfValue = typeof callback
-      if (typeOfValue !== 'function') {
-        throw new Error(
-          `Subscribing callback must be of type \`function\`, received \`${typeOfValue}\`.`,
-        )
-      }
-
-      if (!readables.has('message')) {
-        readables.set(
-          'message',
-          createStore({
-            resource,
-            eventName: 'message',
-            beacon,
-            options,
-            readables,
-            state,
-          }),
-        )
-      }
-
-      state.eventsCounter++
-
-      const message = readables.get('message')
-
-      if (!message) {
-        throw new Error('Could not find message.')
-      }
-
-      return message.subscribe(callback)
+      return disconnect({ resource: from })
     },
     /**
      *  Select an event from the stream.
@@ -353,32 +329,6 @@ export function source({
      * @returns
      */
     select(eventName) {
-      if (!IS_BROWSER) {
-        return {
-          /**
-           * @template T
-           * @param {(error:OnJsonParseErrorPayload<T>)=>null|T|Promise<null|T>} [onJsonParseError]
-           * @returns
-           */
-          json(onJsonParseError) {
-            if (onJsonParseError) {
-              return readable(null)
-            }
-            return readable(null)
-          },
-          subscribe: readable('').subscribe,
-          transform(
-            /**
-             * @type {(event:import('./types').Event)=>void}
-             */
-            // eslint-disable-next-line @typescript-eslint/no-unused-vars
-            callback,
-          ) {
-            // @ts-ignore
-            return readable('')
-          },
-        }
-      }
       if (eventName.includes('\n')) {
         throw new Error(
           `The name of the event must not contain new line characters, received "${eventName}"`,
@@ -395,9 +345,7 @@ export function source({
         readables.set(
           eventName,
           createStore({
-            resource,
-            beacon,
-            options,
+            connected,
             eventName,
             readables,
             state,
@@ -415,13 +363,28 @@ export function source({
 
       return {
         subscribe: event.subscribe,
-        transform: createTransformer({ resource, eventName, beacon, options }),
+        transform: createTransformer({
+          connected,
+          eventName,
+        }),
         /**
+         * Parse each message as Json.
          * @template T
-         * @param {(error:OnJsonParseErrorPayload<T>)=>null|T|Promise<null|T>} [onJsonParseError]
+         * @param {typeof defaultJsonOrPredicate} or A function that's invoked when a `JSON.parse` error is detected.
+         * > **Note**\
+         * > The resulting value of this function will become the new value of the store.
+         * > ## Example
+         * > ```js
+         * > source({from:'/events'}).json(
+         * >    function or({previous, value}){
+         * >      console.error(value.error)
+         * >      return previous
+         * >    }
+         * >  )
+         * > ```
          * @returns
          */
-        json(onJsonParseError) {
+        json(or = defaultJsonOrPredicate) {
           if (!IS_BROWSER) {
             return readable(null)
           }
@@ -429,58 +392,49 @@ export function source({
             /**
              * @type {null|T}
              */
-            let previousParsedValue = null
+            let previous = null
             const reader = data.getReader()
             return readable(
-              previousParsedValue,
+              previous,
               /**
                * @type {import('svelte/store').StartStopNotifier<null|T>}
                */
               function start(set) {
                 const read = async function run() {
                   try {
-                    const { done, value } = await reader.read()
+                    const { done, value: raw } = await reader.read()
                     if (done) {
                       return
                     }
                     try {
-                      previousParsedValue = JSON.parse(value)
-                      set(previousParsedValue)
-                    } catch (error) {
-                      if (!onJsonParseError) {
-                        console.error(error)
-                        set(null)
-                        return
-                      }
+                      previous = JSON.parse(raw)
+                      set(previous)
+                    } catch (e) {
                       set(
-                        await onJsonParseError({
+                        or({
+                          previous,
+                          raw: raw,
                           // @ts-ignore
-                          error,
-                          currentRawValue: value,
-                          previousParsedValue,
+                          error: e,
                         }),
                       )
                     }
                     read()
-                  } catch (error) {
-                    if (!onJsonParseError) {
-                      console.error(error)
-                      set(null)
-                      return
-                    }
+                  } catch (e) {
                     set(
-                      await onJsonParseError({
+                      or({
+                        previous,
+                        raw: '',
                         // @ts-ignore
-                        error,
-                        currentRawValue: '',
-                        previousParsedValue,
+                        error: e,
                       }),
                     )
                   }
                 }
                 read()
                 return function stop() {
-                  disconnect(resource)
+                  // debugger
+                  disconnect({ resource: from })
                   reader.cancel()
                 }
               },
