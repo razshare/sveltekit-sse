@@ -66,14 +66,19 @@ export function POST({ request }) {
   locked.subscribe(function run() {
     console.log('locked', get(locked))
   })
-  return events(
-    async function run(emit) {
-      await new Promise(function start(stop) {
-        dumpData({ emit }).then(stop)
-      })
+
+  events({
+    start({ emit }) {
+      emit('asd', 'asd')
     },
-    { locked },
-  )
+    cancel() {},
+  })
+
+  return events(async function run(emit) {
+    await new Promise(function start(stop) {
+      dumpData({ emit }).then(stop)
+    })
+  })
     .expectBeacon(3000)
     .toResponse(request)
 }

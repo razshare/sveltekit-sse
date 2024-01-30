@@ -46,14 +46,20 @@ export {}
  * @param {false|string} reason A short description explaining the reason for closing the stream.
  */
 
+/////////////////////////////////////////////////
+/**
+ * @typedef ClosePayload
+ * @property {string} [reason]
+ */
+
 /**
  * Describes an event before being serialized.
  * @typedef Event
  * @property {string} id Message identifier.
  * @property {string} event Name of the event.
  * @property {string} data Message data.
- * @property {false|Error} error Something went wrong.
- * @property {ConnectStream} connect Connect the stream.
+ * @property {Error} [error] Something went wrong.
+ * @property {function():void} connect Connect the stream.
  * > **Note**\
  * > You can use this whenever the stream disconnects for any reason in order to reconnect.
  *
@@ -65,8 +71,13 @@ export {}
  *   connect()
  * })
  * ```
- * @property {CloseStream} close Close the stream.
+ * @property {function(ClosePayload):void} close Close the stream.
  */
+
+/**
+ * @typedef {(event:import('./types').Event)=>void} EventListener
+ */
+/////////////////////////////////////////////
 
 /**
  * @typedef {function(Event):void} ListenerCallback
@@ -395,11 +406,15 @@ export {}
  */
 
 /**
- * Set the a time before a beacon is expected.
- * Once this time is exceeded, the stream will close on the server side.
+ * Specify when a beacon signal is expected to arrive from the client, in `milliseconds`.
  * @callback SetExpectBeacon
- * @param {number} milliseconds
+ * @param {number} milliseconds If this many `milliseconds` pass without any beacon detected, the stream is closed.
  * @returns {EventsGateway}
+ */
+
+/**
+ * @callback SetLock
+ * @param {false|import('svelte/store').Writable<boolean>} locked
  */
 
 /**
@@ -422,7 +437,8 @@ export {}
  * Overwriting header `Content-Type` to something other than `text/event-stream` will break the SSE contract and the event will stop working as intended.
  * @property {OnCancel} onCancel Do something after the stream has been canceled.
  * @property {GetStream} getStream Get the underlying stream used by the event.
- * @property {SetExpectBeacon} expectBeacon Set the a time before a beacon is expected in `milliseconds`.
+ * @property {SetLock} setLock Set a lock for the event. This will stop the response from resolving immediately, instead it will resolve when this lock store is set to false.
+ * @property {SetExpectBeacon} expectBeacon Specify when a beacon signal is expected to arrive from the client, in `milliseconds`.\
  * Once this time is exceeded, the stream will close on the server side.
  * @property {ToResponse} toResponse Build a `Response`.
  */

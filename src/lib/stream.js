@@ -2,29 +2,72 @@ import { fetchEventSource } from '@microsoft/fetch-event-source'
 import { IS_BROWSER } from './constants'
 
 /**
- * @type {import('./types').StreamState}
+ * @type {StreamState}
  */
 export const CONNECTING = 0
 /**
- * @type {import('./types').StreamState}
+ * @type {StreamState}
  */
 export const OPEN = 1
 /**
- * @type {import('./types').StreamState}
+ * @type {StreamState}
  */
 export const CLOSED = 2
 
 /**
- * @type {import('./types').Stream}
+ * Options for the underlying http request.
+ * @typedef {Pick<import('@microsoft/fetch-event-source').FetchEventSourceInit, "body"|"cache"|"credentials"|"fetch"|"headers"|"integrity"|"keepalive"|"method"|"mode"|"openWhenHidden"|"redirect"|"referrer"|"referrerPolicy"|"timeout"|"window">} Options
  */
-export function stream(resource, options = false, onIdFound = false) {
+
+/**
+ * @callback IdFound
+ * @param {string} id
+ */
+
+/**
+ * @typedef StreamPayload
+ * @property {RequestInfo|URL} resource
+ * @property {Options} options
+ * @property {number} beacon
+ * @property {IdFound} [onIdFound]
+ */
+
+/**
+ * State of the stream.\
+ * It can be
+ * - `CONNECTING` = `0`
+ * - `OPEN` = `1`
+ * - `CLOSED` = `2`
+ * @typedef {0|1|2} StreamState
+ */
+
+/**
+ * @typedef SendErrorPayload
+ * @property {Error} [error]
+ */
+
+/**
+ * @typedef SendClosePayload
+ * @property {Error} [error]
+ */
+
+/**
+ * @typedef {ReturnType<stream>} EventSource
+ */
+
+/**
+ *
+ * @param {StreamPayload} payload
+ * @returns
+ */
+export function stream({ resource, options, onIdFound }) {
   /**
-   * @type {Map<string, Array<import('./types').ListenerCallback>>}
+   * @type {Map<string, Array<import('./types').EventListener>>}
    */
   const events = new Map()
 
   /**
-   * @type {import('./types').StreamState}
+   * @type {StreamState}
    */
   let readyState = CONNECTING
 
@@ -51,11 +94,11 @@ export function stream(resource, options = false, onIdFound = false) {
         onIdFound(id ?? '')
       },
       onmessage({ id, event, data }) {
-        sendMessage({ id, event, data, error: false })
+        sendMessage({ id, event, data })
       },
       onclose() {
         readyState = CLOSED
-        sendClose()
+        sendClose({})
       },
       onerror(error) {
         readyState = CLOSED
@@ -67,19 +110,20 @@ export function stream(resource, options = false, onIdFound = false) {
   }
 
   /**
-   * @type {import('./types').StreamedClose}
+   *
+   * @param {import('./types').ClosePayload} payload
    */
-  function close(reason = false) {
+  function close({ reason }) {
     controller.abort(reason)
     readyState = CLOSED
-    sendClose()
+    sendClose({})
   }
 
   /**
    *
-   * @param {false|Error} error
+   * @param {SendErrorPayload} payload
    */
-  function sendError(error) {
+  function sendError({ error }) {
     const currentListeners = events.get('error') ?? []
     for (const listener of currentListeners) {
       listener({ id: '', event: '', data: '', error, connect, close })
@@ -88,9 +132,9 @@ export function stream(resource, options = false, onIdFound = false) {
 
   /**
    *
-   * @param {false|Error} error
+   * @param {SendClosePayload} reason
    */
-  function sendClose(error = false) {
+  function sendClose({ error }) {
     const currentListeners = events.get('close') ?? []
     for (const listener of currentListeners) {
       listener({ id: '', event: '', data: '', error, connect, close })
@@ -98,8 +142,16 @@ export function stream(resource, options = false, onIdFound = false) {
   }
 
   /**
+   * @typedef SendMessagePayload
+   * @property {string} id
+   * @property {string} event
+   * @property {string} data
+   * @property {Error} [error]
+   */
+
+  /**
    *
-   * @param {{id:string,event:string,data:string,error:false|Error}} payload
+   * @param {SendMessagePayload} payload
    */
   function sendMessage({ id, event, data }) {
     const decoded = decodeURIComponent(data)
@@ -109,7 +161,6 @@ export function stream(resource, options = false, onIdFound = false) {
         id,
         event,
         data: decoded,
-        error: false,
         connect,
         close,
       })
@@ -119,31 +170,48 @@ export function stream(resource, options = false, onIdFound = false) {
   connect()
 
   return {
+    /**
+     * @returns {string}
+     */
     get url() {
       return `${resource}`
     },
+    /**
+     * @returns {StreamState}
+     */
     get readyState() {
       return readyState
     },
-    addEventListener(type, listener) {
-      if (!events.has(type)) {
-        events.set(type, [])
+    /**
+     *
+     * @param {string} name
+     * @param {import('./types').EventListener} listener
+     */
+    addEventListener(name, listener) {
+      if (!events.has(name)) {
+        events.set(name, [])
       }
 
-      const listeners = events.get(type) ?? []
+      const listeners = events.get(name) ?? []
       listeners.push(listener)
     },
-    removeEventListener(type, listener) {
-      if (!events.has(type)) {
+    /**
+     *
+     * @param {string} name
+     * @param {import('./types').EventListener} listener
+     * @returns
+     */
+    removeEventListener(name, listener) {
+      if (!events.has(name)) {
         return
       }
-      const listeners = events.get(type) ?? []
+      const listeners = events.get(name) ?? []
       const listenersReplacement = listeners.filter(
         function pass(listenerLocal) {
           return listenerLocal !== listener
         },
       )
-      events.set(type, listenersReplacement)
+      events.set(name, listenersReplacement)
     },
     close,
   }

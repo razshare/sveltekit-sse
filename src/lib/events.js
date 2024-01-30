@@ -1,3 +1,5 @@
+import { writable } from 'svelte/store'
+
 function uuid({ short } = { short: false }) {
   let dt = new Date().getTime()
   const BLUEPRINT = short ? 'xyxxyxyx' : 'xxxxxxxx-xxxx-yxxx-yxxx-xxxxxxxxxxxx'
@@ -10,13 +12,21 @@ function uuid({ short } = { short: false }) {
 }
 
 /**
- * @type {import("./types").CreateEmitter}
+ * @typedef CreateEmitterPayload
+ * @property {ReadableStreamDefaultController} controller
+ * @property {{connected:boolean}} context
  */
-function createEmitter(controller, streamInfo) {
+
+/**
+ *
+ * @param {CreateEmitterPayload} payload
+ * @returns {EmitterOfManyEvents}
+ */
+function createEmitter({ controller, context }) {
   let id = 1
   const encoder = new TextEncoder()
   return function emit(eventName, data) {
-    if (streamInfo.canceled) {
+    if (!context.connected) {
       throw new Error(`Client disconnected from the event.`)
     }
     const typeOfEventName = typeof eventName
@@ -59,77 +69,57 @@ function createEmitter(controller, streamInfo) {
 }
 
 /**
- * @type {import("./types").CreateStream}
+ * @typedef CreateStreamPayload
+ * @property {Start} start
+ * @property {Cancel} [cancel]
+ * @property {string} id
+ * @property {number} expectBeacon
+ * @property {import('svelte/store').Writable<boolean>} lock
  */
-function createStream(producer, id, expectBeacon, onCancel, options) {
-  const streamInfo = { canceled: false }
+
+/**
+ *
+ * @param {CreateStreamPayload} payload
+ * @returns
+ */
+function createStream({ start, id, expectBeacon, cancel, lock }) {
+  const context = { connected: true }
   return new ReadableStream({
     async start(controller) {
       // eslint-disable-next-line @typescript-eslint/no-this-alias
       const self = this
 
-      if (options.locked) {
-        /**
-         * @type {import("svelte/store").Unsubscriber}
-         */
-        const unsubscribe = options.locked.subscribe(
-          async function run(locked) {
-            if (locked) {
-              return
-            }
-
-            controller.close()
-            streamInfo.canceled = true
-            for (const callback of onCancel) {
-              await callback(self)
-            }
-            unsubscribe()
-          },
-        )
-
-        const timeout = setTimeout(async function run() {
-          unsubscribe()
-          if (options.locked) {
-            options.locked.set(false)
-          }
-          controller.close()
-          streamInfo.canceled = true
-          for (const callback of onCancel) {
-            await callback(self)
-          }
-        }, expectBeacon)
-
-        beaconTimeouts.set(id, timeout)
-      } else {
-        const timeout = setTimeout(async function run() {
-          controller.close()
-          streamInfo.canceled = true
-          for (const callback of onCancel) {
-            await callback(self)
-          }
-        }, expectBeacon)
-
-        beaconTimeouts.set(id, timeout)
-      }
-
-      const customEmitter = createEmitter(controller, streamInfo)
-
-      await producer(customEmitter)
-
-      if (!options.locked) {
-        streamInfo.canceled = true
-        controller.close()
-        for (const callback of onCancel) {
-          await callback(self)
+      const unsubscribe = lock.subscribe(async function run($lock) {
+        if ($lock) {
+          return
         }
-      }
+
+        controller.close()
+        if (cancel) {
+          cancel(self)
+        }
+        unsubscribe()
+      })
+
+      const timeout = setTimeout(async function run() {
+        unsubscribe()
+        lock.set(false)
+        controller.close()
+        context.connected = false
+        if (cancel) {
+          cancel(self)
+        }
+      }, expectBeacon)
+
+      beaconTimeouts.set(id, timeout)
+
+      const emit = createEmitter({ controller, context })
+
+      await start({ source: self, emit, lock })
     },
-    async cancel() {
-      // eslint-disable-next-line @typescript-eslint/no-this-alias
-      const self = this
-      streamInfo.canceled = true
-      for (const callback of onCancel) {
-        await callback(self)
+    cancel() {
+      if (cancel) {
+        cancel(this)
       }
     },
   })
@@ -141,43 +131,100 @@ function createStream(producer, id, expectBeacon, onCancel, options) {
 const beaconTimeouts = new Map()
 
 /**
- * Create one stream and emit multiple server sent events.
- * @type {import('./types').CreatorOfManyEventsGateway}
+ * @callback OnCancel
+ * @param {UnderlyingDefaultSource<string>} stream
+ * @returns {void|PromiseLike<void>}
  */
-export function events(
-  producer,
-  options = {
-    /** @type {false} */
-    locked: false,
-  },
-) {
-  /** @type {Array<import("./types").OnCancelCallback>} */
-  const onCancel = []
+
+/**
+ * Send data to the client.
+ * @callback EmitterOfManyEvents
+ * @param {string} eventName Name of the event.
+ * @param {string} data Data to send.
+ * @throws When `eventname` or `data` are not of type `string`.
+ * @returns {boolean} `false` if the stream has been canceled, otherwise `true`.
+ */
+
+/**
+ * @typedef StartPayload
+ * @property {EmitterOfManyEvents} emit Emit events to the client.
+ * @property {import("svelte/store").Writable<boolean>} lock Set this store to false in order to terminate the event.
+ * @property {UnderlyingDefaultSource<string>} source
+ */
+
+/**
+ * @callback Start
+ * @param {StartPayload} payload
+ * @returns {void|PromiseLike<void>}
+ */
+
+/**
+ * @callback Cancel
+ * @param {UnderlyingDefaultSource<string>} stream
+ * @returns {void|PromiseLike<void>}
+ */
+
+/**
+ * test
+ * @typedef EventsPayload
+ * @property {Start} start
+ * @property {Cancel} [cancel]
+ */
+
+/**
+ * Create one stream and emit multiple server sent events.
+ * @param {EventsPayload} payload
+ */
+export function events({ start, cancel }) {
   /** @type {Map<string, string>} */
   const headers = new Map()
   /** @type undefined|ReadableStream */
   let stream = undefined
   let expectBeacon = 15000
+  let lock = writable(true)
 
   return {
+    /**
+     *
+     * @param {string} key
+     * @param {string} value
+     * @returns
+     */
     setHeader(key, value) {
       headers.set(key, value)
       return this
     },
-    onCancel(callback) {
-      onCancel.push(callback)
-      return this
-    },
+    /**
+     *
+     * @param {string} id
+     * @returns
+     */
     getStream(id) {
       if (!stream) {
-        stream = createStream(producer, id, expectBeacon, onCancel, options)
+        stream = createStream({
+          start,
+          expectBeacon,
+          id,
+          lock,
+          cancel,
+        })
       }
       return stream
     },
+    /**
+     *
+     * @param {number} milliseconds
+     * @returns
+     */
     expectBeacon(milliseconds) {
       expectBeacon = milliseconds
       return this
     },
+    /**
+     *
+     * @param {Request} request
+     * @returns
+     */
     toResponse(request) {
       const parts = request.url.split('?')
       let id = 2 === parts.length ? parts[1] ?? '' : ''
