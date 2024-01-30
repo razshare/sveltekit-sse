@@ -43,7 +43,7 @@ and consume the source on your client with:
 <script>
   // src/routes/+page.svelte
   import { source } from 'sveltekit-sse'
-  const value = source({from:'/custom-event'}).select('message')
+  const value = source('/custom-event').select('message')
 </script>
 
 {$value}
@@ -61,8 +61,7 @@ You can reconnect to the stream whenever the stream closes
 <script>
   import { source } from "sveltekit-sse"
   
-  const data = source({
-    from:'/custom-event',
+  const data = source('/custom-event', {
     close({connect}){
       console.log('reconnecting...')
       connect()
@@ -85,8 +84,7 @@ You can apply custom headers to the connection
 <script>
   import { source } from 'sveltekit-sse'
 
-  const connection = source({
-    from:'/event',
+  const connection = source('/event', {
     options: {
       headers: {
         Authorization: 'Bearer ...',
@@ -112,7 +110,7 @@ Here's an example how to use it.
 <script>
   import { source } from 'sveltekit-sse'
 
-  const connection = source({from:'/custom-event'})
+  const connection = source('/custom-event')
   const channel = connection.select('message')
 
   const transformed = channel.transform(function start(stream) {
@@ -161,7 +159,7 @@ You can parse incoming messages from the source as json using `source::select::j
 <script>
   import { source } from 'sveltekit-sse'
 
-  const connection = source({from:'/custom-event'})
+  const connection = source('/custom-event')
   const json = connection.select('message').json(
     function or({error, raw, previous}){
       console.error(`Could not parse "${raw}" as json.`, error)
@@ -240,8 +238,7 @@ In order for this to work `TClient` should always be lesser than `TServer`, and 
 You can set `TClient` as you're invoking `source`
 
 ```js
-const connection = source({
-  from:'/events',
+const connection = source('/events', {
   beacon:3000,  // <=== this is TClient
 })
 ```

@@ -269,8 +269,7 @@ function defaultJsonOrPredicate({ error, previous }) {
  * > Calling this multiple times using the same `resource` string will not
  * > create multiple streams, instead the same stream will be reused for all exposed
  * > events on the given `resource`.
- * @typedef SourcePayload
- * @property {string} from Path to the stream.
+ * @typedef SourceConfiguration
  * @property {import('./types').EventListener} [close] Do something whenever the connection closes.
  * @property {import('./types').EventListener} [error] Do something whenever there are errors.
  * @property {Options} [options] Options for the underlying http request.
@@ -293,10 +292,11 @@ function defaultJsonOrPredicate({ error, previous }) {
  * >  }
  * > })
  * > ```
- * @param {SourcePayload} payload
+ * @param {string} from Path to the stream.
+ * @param {SourceConfiguration} configuration
  * @returns
  */
-export function source({ from, close, error, beacon = 5000, options = {} }) {
+export function source(from, { close, error, beacon = 5000, options = {} }) {
   /** @type {SourceState} */
   let state = {
     eventsCounter: 0,
