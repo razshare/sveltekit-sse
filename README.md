@@ -233,15 +233,15 @@ The above code `emit`s the `hello world` string to the `message` event and close
 
 > [!WARNING]
 > You should not send any more messages after invoking `lock.set(false)` otherwise your `emit` function will result into an error.\
-> The resulting error is wrapper in `Unsafe<void>`, which you can manage like so
-> ```js
-> lock.set(false)
-> const {error} = emit('message', 'I have a bad feeling about this...')
-> if(error){
->   console.error(error)
->   return
-> }
-> ```
+> The resulting error is wrapper in `Unsafe<void>`, which you can manage using conditionals
+```js
+lock.set(false)
+const {error} = emit('message', 'I have a bad feeling about this...')
+if(error){
+  console.error(error)
+  return
+}
+```
 
 ## Beacon
 
