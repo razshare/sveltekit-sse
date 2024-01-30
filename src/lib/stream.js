@@ -17,7 +17,7 @@ export const CLOSED = 2
 /**
  * @type {import('./types').Stream}
  */
-export function stream(resource, options = false) {
+export function stream(resource, options = false, onIdFound = false) {
   /**
    * @type {Map<string, Array<import('./types').ListenerCallback>>}
    */
@@ -35,9 +35,21 @@ export function stream(resource, options = false) {
     if (!IS_BROWSER) {
       return
     }
+
     await fetchEventSource(`${resource}`, {
       openWhenHidden,
       ...rest,
+      method: 'POST',
+      async onopen({ headers }) {
+        if (!onIdFound) {
+          return
+        }
+        const id = headers.get('x-sse-id')
+        if (!id) {
+          return
+        }
+        onIdFound(id ?? '')
+      },
       onmessage({ id, event, data }) {
         sendMessage({ id, event, data, error: false })
       },
@@ -68,8 +80,8 @@ export function stream(resource, options = false) {
    * @param {false|Error} error
    */
   function sendError(error) {
-    const current_listeners = events.get('error') ?? []
-    for (const listener of current_listeners) {
+    const currentListeners = events.get('error') ?? []
+    for (const listener of currentListeners) {
       listener({ id: '', event: '', data: '', error, connect, close })
     }
   }
@@ -79,8 +91,8 @@ export function stream(resource, options = false) {
    * @param {false|Error} error
    */
   function sendClose(error = false) {
-    const current_listeners = events.get('close') ?? []
-    for (const listener of current_listeners) {
+    const currentListeners = events.get('close') ?? []
+    for (const listener of currentListeners) {
       listener({ id: '', event: '', data: '', error, connect, close })
     }
   }
@@ -91,8 +103,8 @@ export function stream(resource, options = false) {
    */
   function sendMessage({ id, event, data }) {
     const decoded = decodeURIComponent(data)
-    const current_listeners = events.get(event) ?? []
-    for (const listener of current_listeners) {
+    const currentListeners = events.get(event) ?? []
+    for (const listener of currentListeners) {
       listener({
         id,
         event,
@@ -126,12 +138,12 @@ export function stream(resource, options = false) {
         return
       }
       const listeners = events.get(type) ?? []
-      const listeners_replacement = listeners.filter(
-        function pass(listener_local) {
-          return listener_local !== listener
+      const listenersReplacement = listeners.filter(
+        function pass(listenerLocal) {
+          return listenerLocal !== listener
         },
       )
-      events.set(type, listeners_replacement)
+      events.set(type, listenersReplacement)
     },
     close,
   }

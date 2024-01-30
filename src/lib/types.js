@@ -15,7 +15,7 @@ export {}
 
 /**
  * Options for the underlying http request.
- * @typedef {Pick<import('@microsoft/fetch-event-source').FetchEventSourceInit, "body"|"cache"|"credentials"|"fetch"|"headers"|"integrity"|"keepalive"|"method"|"mode"|"openWhenHidden"|"redirect"|"referrer"|"referrerPolicy"|"timeout"|"window">} Options
+ * @typedef {Pick<import('@microsoft/fetch-event-source').FetchEventSourceInit, "body"|"cache"|"credentials"|"fetch"|"headers"|"integrity"|"keepalive"|"method"|"mode"|"openWhenHidden"|"redirect"|"referrer"|"referrerPolicy"|"timeout"|"window"> & {beacon:?number}} Options
  */
 
 /**
@@ -162,6 +162,7 @@ export {}
  *   Any body that you want to add to your request: this can be a [Blob](https://developer.mozilla.org/en-US/docs/Web/API/Blob), an [ArrayBuffer](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/ArrayBuffer), a [TypedArray](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/TypedArray), a [DataView](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/DataView), a [FormData](https://developer.mozilla.org/en-US/docs/Web/API/FormData), a [URLSearchParams](https://developer.mozilla.org/en-US/docs/Web/API/URLSearchParams), string object or literal, or a [ReadableStream](https://developer.mozilla.org/en-US/docs/Web/API/ReadableStream) object. This latest possibility is still experimental; check the [compatibility information](https://developer.mozilla.org/en-US/docs/Web/API/Request#browser_compatibility) to verify you can use it.
  * > **Note**\
  * > a request using the GET or HEAD method cannot have a body.
+ * @param {false|((id:string)=>void)} [onIdFound]
  * @returns {Streamed}
  */
 
@@ -170,19 +171,20 @@ export {}
  * @typedef Connected
  * @property {Streamed} eventSource Stream has been established and this is information regarding the connection.
  * @property {number} connectionsCounter How many other clients are connected to the stream.
+ * @property {()=>void} stopBeacon
  */
 
 /**
- * Connect a stream.
- * @callback Connect
+ * Close the source connection `resource`.
+ * @callback ConnectToSource
  * @param {RequestInfo|URL} resource Path to the stream.
  * @param {false|Options} options Options for the underlying http request.
  * @returns {Connected} Connection established.
  */
 
 /**
- * Disconnect a stream.
- * @callback Disconnect
+ * Close the source connection `resource`. This will trigger onClose.
+ * @callback DisconnectFromSource
  * @param {RequestInfo|URL} resource Path to the stream.
  */
 
@@ -313,14 +315,6 @@ export {}
  * @callback Source
  * @param {string} resource path to the stream.
  * @param {false|Options} [options] Options for the underlying http request.
- * > ## Example
- * > ```js
- * > source('/api/events', {
- * >    headers: {
- * >        'Authorization': `Bearer ${token}`
- * >    }
- * > })
- * > ```
  * @returns {Sourced<T>} Source connected.
  */
 
@@ -332,7 +326,7 @@ export {}
 /**
  * @callback ProducerOfOneEvent
  * @param {EmitterOfOneEvent} emit
- * @returns {void}
+ * @returns {boolean} `false` if the stream has been canceled, otherwise `true`.
  */
 
 /**
@@ -361,18 +355,21 @@ export {}
  * @param {string} eventName Name of the event.
  * @param {string} data Data to send.
  * @throws When `eventname` or `data` are not of type `string`.
- * @returns {void}
+ * @returns {boolean} `false` if the stream has been canceled, otherwise `true`.
  */
 
 /**
  * @callback CreateEmitter
  * @param {ReadableStreamDefaultController} controller
+ * @param {{canceled:boolean}} streamInfo
  * @returns {EmitterOfManyEvents}
  */
 
 /**
  * @callback CreateStream
  * @param {ProducerOfManyEvents} producer A callback that will be provided an `emit()` function which you can use to send data to the client.
+ * @param {string} id
+ * @param {number} expectBeacon
  * @param {Array<OnCancelCallback>} onCancel Do something when the stream is canceled.
  * @param {EventsOptions} options
  * @returns {ReadableStream<string>} Options for the event.
@@ -398,6 +395,14 @@ export {}
  */
 
 /**
+ * Set the a time before a beacon is expected.
+ * Once this time is exceeded, the stream will close on the server side.
+ * @callback SetExpectBeacon
+ * @param {number} milliseconds
+ * @returns {EventsGateway}
+ */
+
+/**
  * @typedef EventsGateway
  * @property {SetHeader} setHeader Set a response header.
  *
@@ -417,6 +422,8 @@ export {}
  * Overwriting header `Content-Type` to something other than `text/event-stream` will break the SSE contract and the event will stop working as intended.
  * @property {OnCancel} onCancel Do something after the stream has been canceled.
  * @property {GetStream} getStream Get the underlying stream used by the event.
+ * @property {SetExpectBeacon} expectBeacon Set the a time before a beacon is expected in `milliseconds`.
+ * Once this time is exceeded, the stream will close on the server side.
  * @property {ToResponse} toResponse Build a `Response`.
  */
 
@@ -453,11 +460,13 @@ export {}
 /**
  * Get the underlying stream used by the event.
  * @callback GetStream
+ * @param {string} id
  * @returns {ReadableStream<string>}
  */
 
 /**
  * Build a `Response`.
  * @callback ToResponse
+ * @param {Request} request
  * @returns {Response}
  */

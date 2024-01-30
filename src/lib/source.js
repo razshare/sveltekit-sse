@@ -8,8 +8,8 @@ import { IS_BROWSER } from './constants'
 const connected = new Map()
 
 /**
- *
- * @param {RequestInfo|URL} resource path to the stream.
+ * Close the source connection `resource`. This will trigger `onClose`.
+ * @type {import('./types').DisconnectFromSource}
  */
 async function disconnect(resource) {
   const url = `${resource}`
@@ -20,6 +20,7 @@ async function disconnect(resource) {
     if (eventSource.readyState !== CLOSED) {
       // await reference.eventSource.close()
       reference.eventSource.close()
+      reference.stopBeacon()
     }
     reference.connectionsCounter--
 
@@ -34,15 +35,51 @@ async function disconnect(resource) {
 }
 
 /**
- * @type {import('./types').Connect}
+ * Close the source connection `resource`.
+ * @type {import('./types').ConnectToSource}
  */
 function connect(resource, options = false) {
   const url = `${resource}`
   if (!connected.has(url)) {
-    const eventSource = stream(resource, options)
+    /**
+     * @type {false|ReadableStreamDefaultController<string>}
+     */
+    let controller = false
+    /**
+     * @type {false|NodeJS.Timeout}
+     */
+    let interval = false
+    const eventSource = stream(resource, options, function onIdFound(id) {
+      let beacon = 10000
+      if (options && options.beacon) {
+        beacon = options.beacon
+      }
+      if (!id) {
+        console.error('Invalid sse id.', { id })
+        return
+      }
+      interval = setInterval(function run() {
+        // console.log('sending beacon with id', id)
+        navigator.sendBeacon(resource.toString() + '?' + id)
+      }, beacon)
+    })
+
+    const stopBeacon = function stopBeacon() {
+      if (controller) {
+        controller.close()
+      }
+      if (interval) {
+        clearInterval(interval)
+      }
+    }
+
+    eventSource.addEventListener('close', stopBeacon)
+    eventSource.addEventListener('error', stopBeacon)
+
     const freshReference = {
       eventSource,
       connectionsCounter: 0,
+      stopBeacon,
     }
     connected.set(url, freshReference)
     return freshReference
@@ -53,13 +90,14 @@ function connect(resource, options = false) {
     throw new Error(`Could not find reference for ${url}.`)
   }
 
-  const { eventSource } = cachedReference
+  const { eventSource, stopBeacon } = cachedReference
 
   if (eventSource.readyState === CLOSED) {
     // const reconnectedEventSource = new EventSource(url)
     const freshReference = {
       eventSource,
       connectionsCounter: 0,
+      stopBeacon,
     }
     connected.set(url, freshReference)
 

@@ -1,4 +1,5 @@
 import { events } from '$lib/events.js'
+import { get, writable } from 'svelte/store'
 
 /**
  * @typedef Quote
@@ -48,17 +49,31 @@ function delay(milliseconds) {
  */
 async function dumpData({ emit }) {
   for (let i = 0; i < 10; i++) {
+    console.log('fake emitting...')
     const catQuotes = findAThousandCatQuotes()
     const stringifiedCatQuote = JSON.stringify(catQuotes)
-    emit('thousand-cat-quotes', stringifiedCatQuote)
+    try {
+      emit('thousands-of-cat-quotes', stringifiedCatQuote)
+    } catch {
+      return
+    }
     await delay(1000)
   }
 }
 
-export function GET() {
-  return events(async function run(emit) {
-    await new Promise(function start(stop) {
-      dumpData({ emit }).then(stop)
-    })
-  }).toResponse()
+export function POST({ request }) {
+  const locked = writable(true)
+  locked.subscribe(function run() {
+    console.log('locked', get(locked))
+  })
+  return events(
+    async function run(emit) {
+      await new Promise(function start(stop) {
+        dumpData({ emit }).then(stop)
+      })
+    },
+    { locked },
+  )
+    .expectBeacon(3000)
+    .toResponse(request)
 }
