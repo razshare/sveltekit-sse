@@ -1,8 +1,8 @@
 <script>
   import { source } from '$lib/source.js'
-  const connection = source('/events', { beacon: 1000 })
+  const connection = source({ resource: '/events', beacon: 1000 })
   /**
-   * @type {import('svelte/store').Readable<Array<import('../routes/events/+server').Quote>>}
+   * @type {import('svelte/store').Readable<null|Array<import('../routes/events/+server').Quote>>}
    */
   const quotes = connection.select('thousands-of-cat-quotes').json()
 

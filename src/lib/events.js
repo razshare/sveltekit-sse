@@ -1,4 +1,6 @@
 import { writable } from 'svelte/store'
+import { ok } from './ok'
+import { error } from './error'
 
 function uuid({ short } = { short: false }) {
   let dt = new Date().getTime()
@@ -20,29 +22,30 @@ function uuid({ short } = { short: false }) {
 /**
  *
  * @param {CreateEmitterPayload} payload
- * @returns {EmitterOfManyEvents}
+ * @returns {(eventName:string,data:string)=>import('./types').Unsafe<void>}}
  */
 function createEmitter({ controller, context }) {
   let id = 1
   const encoder = new TextEncoder()
+
   return function emit(eventName, data) {
     if (!context.connected) {
-      throw new Error(`Client disconnected from the event.`)
+      return error('Client disconnected from the stream.')
     }
     const typeOfEventName = typeof eventName
     const typeOfData = typeof data
     if (typeOfEventName !== 'string') {
-      throw new Error(
+      return error(
         `Event name must of type \`string\`, received \`${typeOfEventName}\`.`,
       )
     }
     if (typeOfData !== 'string') {
-      throw new Error(
+      return error(
         `Event data must of type \`string\`, received \`${typeOfData}\`.`,
       )
     }
     if (eventName.includes('\n')) {
-      throw new Error(
+      return error(
         `Event name must not contain new line characters, received "${eventName}".`,
       )
     }
@@ -55,26 +58,68 @@ function createEmitter({ controller, context }) {
           encoder.encode(`data: ${encodeURIComponent(chunk)}\n`),
         )
       } catch (e) {
-        console.log('something went wrong (1)', e)
+        return error(e)
       }
     }
     try {
       controller.enqueue(encoder.encode('\n'))
     } catch (e) {
-      console.log('something went wrong (2)', e)
+      return error(e)
     }
     id++
-    return true
+    return ok()
   }
+}
+
+/**
+ * @type {Map<string,NodeJS.Timeout>}
+ */
+const timeouts = new Map()
+/**
+ * @type {Map<string,import('svelte/store').Writable<boolean>>}
+ */
+const locks = new Map()
+
+/**
+ * @typedef StreamContext
+ * @property {boolean} connected
+ */
+
+/**
+ * @typedef CreateTimeoutAndLockPayload
+ * @property {StreamContext} context
+ * @property {number} timeout
+ */
+
+/**
+ * @typedef CreateTimeoutPayload
+ * @property {StreamContext} context
+ * @property {import('svelte/store').Writable<boolean>} lock
+ * @property {number} timeout
+ */
+
+/**
+ *
+ * @param {CreateTimeoutPayload} payload
+ * @returns
+ */
+function createTimeout({ context, lock, timeout }) {
+  return setTimeout(async function run() {
+    if (!context.connected) {
+      return
+    }
+    lock.set(false)
+  }, timeout)
 }
 
 /**
  * @typedef CreateStreamPayload
  * @property {Start} start
- * @property {Cancel} [cancel]
  * @property {string} id
- * @property {number} expectBeacon
  * @property {import('svelte/store').Writable<boolean>} lock
+ * @property {StreamContext} context
+ * @property {number} [timeout]
+ * @property {Cancel} [cancel]
  */
 
 /**
@@ -82,8 +127,7 @@ function createEmitter({ controller, context }) {
  * @param {CreateStreamPayload} payload
  * @returns
  */
-function createStream({ start, id, expectBeacon, cancel, lock }) {
-  const context = { connected: true }
+function createStream({ start, id, lock, context, cancel, timeout = 10000 }) {
   return new ReadableStream({
     async start(controller) {
       // eslint-disable-next-line @typescript-eslint/no-this-alias
@@ -94,41 +138,34 @@ function createStream({ start, id, expectBeacon, cancel, lock }) {
           return
         }
 
+        if (!context.connected) {
+          unsubscribe()
+          return
+        }
+
         controller.close()
+        context.connected = false
+
         if (cancel) {
           cancel(self)
         }
+
         unsubscribe()
       })
 
-      const timeout = setTimeout(async function run() {
-        unsubscribe()
-        lock.set(false)
-        controller.close()
-        context.connected = false
-        if (cancel) {
-          cancel(self)
-        }
-      }, expectBeacon)
-
-      beaconTimeouts.set(id, timeout)
+      timeouts.set(id, createTimeout({ context, timeout, lock }))
 
       const emit = createEmitter({ controller, context })
 
-      await start({ source: self, emit, lock })
+      start({ source: self, emit, lock })
     },
     cancel() {
       if (cancel) {
-        cancel(this)
+        lock.set(false)
       }
     },
   })
 }
-
-/**
- * @type {Map<string,NodeJS.Timeout>}
- */
-const beaconTimeouts = new Map()
 
 /**
  * @callback OnCancel
@@ -137,24 +174,39 @@ const beaconTimeouts = new Map()
  */
 
 /**
- * Send data to the client.
- * @callback EmitterOfManyEvents
- * @param {string} eventName Name of the event.
- * @param {string} data Data to send.
- * @throws When `eventname` or `data` are not of type `string`.
- * @returns {boolean} `false` if the stream has been canceled, otherwise `true`.
- */
-
-/**
- * @typedef StartPayload
- * @property {EmitterOfManyEvents} emit Emit events to the client.
- * @property {import("svelte/store").Writable<boolean>} lock Set this store to false in order to terminate the event.
+ * @typedef Connection
+ * @property {(eventName:string,data:string)=>import('./types').Unsafe<void>} emit Emit events to the client.\
+ * The `Unsafe<void>` wrapper may contain an error
+ * ## Example
+ * ```js
+ * const {error} = emit('message', 'hello world')
+ * if(error){
+ *  console.error(error)
+ *  lock.set(false)
+ *  return
+ * }
+ * ```
+ * @property {import("svelte/store").Writable<boolean>} lock This store is initialized with `true`,
+ * it prevents the underlying `Response` from resolving automatically.\
+ * Set it to `false` in order to unlock the `Response` and end the stream immediately.
+ *
+ * > **Note**\
+ * > You shouldn't `emit` any more events after setting the lock to `false`.\
+ * > Attempting to emit more data afterwards will result into an error.
+ * > ```js
+ * > lock.set(false)
+ * > const {error} = emit('message', 'hello world')
+ * > if(error){
+ * >  console.error(error) // "Client disconnected from the stream."
+ * >  return
+ * > }
+ * > ```
  * @property {UnderlyingDefaultSource<string>} source
  */
 
 /**
  * @callback Start
- * @param {StartPayload} payload
+ * @param {Connection} payload
  * @returns {void|PromiseLike<void>}
  */
 
@@ -167,93 +219,88 @@ const beaconTimeouts = new Map()
 /**
  * test
  * @typedef EventsPayload
- * @property {Start} start
- * @property {Cancel} [cancel]
+ * @property {Request} request
+ * @property {Start} start The stream has started, run all your logic inside this function.
+ * > **Warning**\
+ * > You should delegate all code that you would normally write directly under your `export function POST` function to this method instead.\
+ * > That is because the whole endpoint is actually going to be used to collect beacon signals from the client in order to correctly detect inactivity or disconnected clients.\
+ * > Beacon signals will be collected repeatedly (by default every `5 seconds`), thus, unless you want to collect that beacon data, you should put all your code inside this `start` function, which will get triggered only once per client connection: the first time they connect.
+ * > ## Example
+ * > ```js
+ * > export function POST({ request }) {
+ * > return events({
+ * >  request,
+ * >  timeout: 3000,
+ * >  start({emit}) {
+ * >    const notifications = [
+ * >      { title: 'title-1', body: 'lorem...' },
+ * >      { title: 'title-2', body: 'lorem...' },
+ * >      { title: 'title-3', body: 'lorem...' },
+ * >    ]
+ * >    notifications.forEach(function pass(notification){
+ * >      emit('notification', JSON.stringify(notification))
+ * >    })
+ * >  }
+ * > })
+}
+ * > ```
+ * @property {Record<string, string>} [headers]
+ * @property {Cancel} [cancel] Do something when the stream is canceled.\
+ * The following qualify as "canceling"
+ * - Calling `.cancel` on the underlying `ReadableStream`
+ * - Calling `lock.set(false)`
+ * - Timeout due to missing beacon signals
+ * @property {number} [timeout] Expect a beacon from the client after `timeout` milliseconds.\
+ * Every beacon resets this timeout.\
+ * When the client fails to send a beacon and reset this timeout, the stream ends immediately.
  */
 
 /**
  * Create one stream and emit multiple server sent events.
  * @param {EventsPayload} payload
  */
-export function events({ start, cancel }) {
-  /** @type {Map<string, string>} */
-  const headers = new Map()
-  /** @type undefined|ReadableStream */
-  let stream = undefined
-  let expectBeacon = 15000
-  let lock = writable(true)
+export function events({ start, cancel, request, headers, timeout = 15000 }) {
+  /**
+   * @type {StreamContext}
+   */
+  const context = { connected: true }
+  const parts = request.url.split('?')
+  let id = 2 === parts.length ? parts[1] ?? '' : ''
 
-  return {
-    /**
-     *
-     * @param {string} key
-     * @param {string} value
-     * @returns
-     */
-    setHeader(key, value) {
-      headers.set(key, value)
-      return this
-    },
-    /**
-     *
-     * @param {string} id
-     * @returns
-     */
-    getStream(id) {
-      if (!stream) {
-        stream = createStream({
-          start,
-          expectBeacon,
-          id,
-          lock,
-          cancel,
-        })
-      }
-      return stream
-    },
-    /**
-     *
-     * @param {number} milliseconds
-     * @returns
-     */
-    expectBeacon(milliseconds) {
-      expectBeacon = milliseconds
-      return this
-    },
-    /**
-     *
-     * @param {Request} request
-     * @returns
-     */
-    toResponse(request) {
-      const parts = request.url.split('?')
-      let id = 2 === parts.length ? parts[1] ?? '' : ''
-
-      if (id) {
-        // console.log('Clearing timeout', id)
-        const timeout = beaconTimeouts.get(id)
-        if (timeout) {
-          clearTimeout(timeout)
-        }
-        return new Response()
-      }
-
-      do {
-        id = uuid({ short: false })
-      } while (beaconTimeouts.has(id))
-
-      const stream = this.getStream(id)
-
-      return new Response(stream, {
-        //@ts-ignore
-        headers: {
-          'Cache-Control': 'no-store',
-          'Content-Type': 'text/event-stream',
-          'Connection': 'keep-alive',
-          ...headers,
-          'x-sse-id': id,
-        },
-      })
-    },
+  if (id) {
+    const timeoutOld = timeouts.get(id)
+    const lock = locks.get(id)
+    if (timeoutOld && lock) {
+      clearTimeout(timeoutOld)
+      timeouts.set(id, createTimeout({ timeout, context, lock }))
+      locks.set(id, lock)
+    }
+    return new Response()
   }
+
+  do {
+    id = uuid({ short: false })
+  } while (timeouts.has(id))
+
+  const lock = writable(true)
+  locks.set(id, lock)
+  const stream = createStream({
+    start,
+    timeout,
+    id,
+    lock,
+    cancel,
+    context,
+  })
+
+  return new Response(stream, {
+    //@ts-ignore
+    headers: {
+      'Cache-Control': 'no-store',
+      'Content-Type': 'text/event-stream',
+      'Connection': 'keep-alive',
+      ...headers,
+      'x-sse-id': id,
+    },
+  })
 }

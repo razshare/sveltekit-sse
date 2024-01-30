@@ -284,7 +284,7 @@ export function source({
   beacon = 10000,
   options = {},
 }) {
-  /** @type {import('./types').SourceState} */
+  /** @type {SourceState} */
   let state = {
     eventsCounter: 0,
   }
@@ -348,8 +348,8 @@ export function source({
       return message.subscribe(callback)
     },
     /**
-     *
-     * @param {string} eventName
+     *  Select an event from the stream.
+     * @param {string} eventName Name of the event.
      * @returns
      */
     select(eventName) {
