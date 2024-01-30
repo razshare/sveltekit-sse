@@ -48,9 +48,39 @@ and consume the source on your client with:
 
 {$value}
 ```
+
 > [!NOTE]
-> Each call of `source` create one single connection and will serve **multiple events** over the **same connection**.\
-> Additionally, **http connections are cached** by `resource` name, so calling `source` a second time with the same `resource` will use the cached http connection instead of creating a new one.
+> Due to how the [beacon api](#beacon) works, you must write all your logic within the `start()` function while on the server.\
+> In other words, this is wrong
+> ```js
+> export function POST({ request }) {
+>   const message = 'hello world'   // <=== wrong, move this below
+>   return events({
+>     request,
+>     start({emit}) {
+>       while(true){
+>         emit('message', message)
+>         await delay(1000)
+>       }
+>     },
+>   })
+> }
+> ```
+> ANd this is the correct way to do it
+> ```js
+> export function POST({ request }) {
+>   return events({
+>     request,
+>     start({emit}) {
+>       const message = 'hello world'   // <=== this is correct
+>       while(true){
+>         emit('message', message)
+>         await delay(1000)
+>       }
+>     },
+>   })
+> }
+> ```
 
 
 ## Reconnect
