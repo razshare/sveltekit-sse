@@ -93,7 +93,7 @@ export function POST({ request }) {
 
 You can reconnect to the stream whenever the stream closes
 
-```svelte
+```html
 <script>
   import { source } from "sveltekit-sse"
   
@@ -116,7 +116,7 @@ You can reconnect to the stream whenever the stream closes
 
 You can apply custom headers to the connection
 
-```svelte
+```html
 <script>
   import { source } from 'sveltekit-sse'
 
@@ -142,7 +142,7 @@ The `transform` method receives a `ReadableStream`, which you can use to read in
 
 Here's an example how to use it.
 
-```svelte
+```html
 <script>
   import { source } from 'sveltekit-sse'
 
