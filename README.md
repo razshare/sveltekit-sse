@@ -296,6 +296,8 @@ export function POST({request}){
 You don't need to manually set these variables up yourself, but you can.\
 The default values are `beacon: 5000` and `timeout: 7000`.
 
+> [!NOTE]
+> You can set both `timeout` and `beacon` to `0` or any negative value to disable beacons completely.
 
 ## Other notes
 
