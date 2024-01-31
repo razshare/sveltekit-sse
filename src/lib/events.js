@@ -153,7 +153,9 @@ function createStream({ start, id, lock, context, cancel, timeout }) {
         unsubscribe()
       })
 
-      timeouts.set(id, createTimeout({ context, timeout, lock }))
+      if (timeout > 0) {
+        timeouts.set(id, createTimeout({ context, timeout, lock }))
+      }
 
       const emit = createEmitter({ controller, context })
 
@@ -252,13 +254,11 @@ function createStream({ start, id, lock, context, cancel, timeout }) {
  * - Timeout due to missing beacon signals
  * @property {number} [timeout] A countdown in `milliseconds`.\
  * If it expires the stream ends immediately.\
- * Each client can send a beacon to the server to reset this timeout and keep the stream online.\
- * \
- * Beacons request must include only the stream id as a query string
- * ## Example
- * ```http
- * http://127.0.0.1:5757/events?
- * ```
+ * Each client can send a beacon to the server to reset this timeout and keep the stream online.
+ * 
+ * > **Note**\
+ * > You can set the `timeout` to `0` or a negative value to disable this behavior and let 
+ * > the stream live indefinitely or until you manually close it through `lock.set(false)`.
  */
 
 /**
@@ -275,9 +275,12 @@ export function events({ start, cancel, request, headers, timeout = 7000 }) {
 
   if (id) {
     const timeoutOld = timeouts.get(id)
-    const lock = locks.get(id)
-    if (timeoutOld && lock) {
+    if (timeoutOld) {
       clearTimeout(timeoutOld)
+      const lock = locks.get(id)
+      if (timeout <= 0 || !lock) {
+        return new Response()
+      }
       timeouts.set(id, createTimeout({ timeout, context, lock }))
       locks.set(id, lock)
     }

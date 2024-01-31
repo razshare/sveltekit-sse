@@ -66,6 +66,11 @@ async function disconnect({ resource }) {
  * @property {RequestInfo|URL} resource Path to the stream.
  * @property {number} [beacon] How often to send a beacon to the server in `milliseconds`.\
  * Defaults to `5000 milliseconds`.
+ *
+ * > **Note**\
+ * > You can set `beacon` to `0` or a negative value to disable this behavior.\
+ * > Remember that if you disable this behavior but the server sent event still declares
+ * > a `timeout`, the stream will close without notice after the `timeout` expires on the server.
  * @property {Options} [options] Options for the underlying http request.
  */
 
@@ -75,7 +80,6 @@ async function disconnect({ resource }) {
  * @returns
  */
 function connect({ resource, beacon = 5000, options = {} }) {
-  console.log(`Connecting to ${resource}`)
   const url = `${resource}`
   if (!connected.has(url)) {
     /**
@@ -91,12 +95,10 @@ function connect({ resource, beacon = 5000, options = {} }) {
       beacon,
       options,
       onIdFound(id) {
-        if (!id) {
-          console.error('Invalid sse id.', { id })
+        if (beacon <= 0) {
           return
         }
         interval = setInterval(function run() {
-          console.log('sending beacon')
           navigator.sendBeacon(resource.toString() + '?' + id)
         }, beacon)
       },
