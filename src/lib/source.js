@@ -295,10 +295,13 @@ function defaultJsonOrPredicate({ error, previous }) {
  * > })
  * > ```
  * @param {string} from Path to the stream.
- * @param {SourceConfiguration} configuration
+ * @param {SourceConfiguration} [configuration]
  * @returns
  */
-export function source(from, { close, error, beacon = 5000, options = {} }) {
+export function source(
+  from,
+  { close, error, beacon = 5000, options = {} } = {},
+) {
   /** @type {SourceState} */
   let state = {
     eventsCounter: 0,

@@ -59,7 +59,6 @@ async function dumpData({ emit, lock }) {
 export function POST({ request }) {
   return events({
     request,
-    timeout: 3000,
     start(connection) {
       dumpData(connection)
     },
