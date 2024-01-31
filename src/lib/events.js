@@ -132,39 +132,45 @@ function createStream({ start, id, lock, context, cancel, timeout }) {
     async start(controller) {
       // eslint-disable-next-line @typescript-eslint/no-this-alias
       const self = this
+      const emit = createEmitter({ controller, context })
+      const started = start({ source: self, emit, lock })
 
-      const unsubscribe = lock.subscribe(async function run($lock) {
-        if ($lock) {
-          return
-        }
-
-        if (!context.connected) {
-          unsubscribe()
-          return
+      /**
+       *
+       * @param {{$lock:boolean}} payload
+       * @returns {Promise<boolean>}
+       */
+      async function stop({ $lock }) {
+        if ($lock || !context.connected) {
+          return false
         }
 
         controller.close()
         context.connected = false
 
-        if (cancel) {
-          cancel(self)
+        const cancelInline = await started
+        if (cancelInline) {
+          await cancelInline(self)
         }
 
-        unsubscribe()
+        if (cancel) {
+          await cancel(self)
+        }
+        return true
+      }
+
+      const unsubscribe = lock.subscribe(async function run($lock) {
+        if (await stop({ $lock })) {
+          unsubscribe()
+        }
       })
 
       if (timeout > 0) {
         timeouts.set(id, createTimeout({ context, timeout, lock }))
       }
-
-      const emit = createEmitter({ controller, context })
-
-      start({ source: self, emit, lock })
     },
     cancel() {
-      if (cancel) {
-        lock.set(false)
-      }
+      lock.set(false)
     },
   })
 }
@@ -209,7 +215,7 @@ function createStream({ start, id, lock, context, cancel, timeout }) {
 /**
  * @callback Start
  * @param {Connection} payload
- * @returns {void|PromiseLike<void>}
+ * @returns {void|Cancel|PromiseLike<Cancel>}
  */
 
 /**

@@ -43,25 +43,29 @@ function delay(milliseconds) {
  * @param {import('$lib/events.js').Connection} payload
  */
 async function dumpData({ emit, lock }) {
-  for (let i = 0; i < 10; i++) {
+  for (let i = 0; i < 3; i++) {
     const catQuote = findCatQuote()
     const stringifiedCatQuote = JSON.stringify(catQuote)
     const { error } = emit('cat-quote', stringifiedCatQuote)
     if (error) {
-      console.error(error.message)
-      return
+      lock.set(false)
+      return function cancel() {
+        console.error(error.message)
+      }
     }
     await delay(1000)
   }
-  lock.set(false) // release the lock
+  lock.set(false)
+  return function cancel() {
+    console.log('Stream canceled.')
+  }
 }
 
 export function POST({ request }) {
   return events({
     request,
     start(connection) {
-      dumpData(connection)
+      return dumpData(connection)
     },
-    cancel() {},
   })
 }

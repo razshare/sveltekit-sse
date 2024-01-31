@@ -112,6 +112,45 @@ You can reconnect to the stream whenever the stream closes
 {$data}
 ```
 
+## Cancel detection
+
+You can run code when a connection is canceled 
+
+- by setting `cancel()`
+  ```js
+  export function POST({ request }) {
+    return events({
+      request,
+      start({emit, lock}) {
+        emit('message', 'hello')
+        lock.set(false)
+      },
+      cancel(){
+        console.log("Connection canceled.")
+      }
+    })
+  }
+  ```
+
+- or by returning a function from `start()`
+  ```js
+  export function POST({ request }) {
+    return events({
+      request,
+      start({emit, lock}) {
+        emit('message', 'hello')
+        lock.set(false)
+        return cancel(){
+          console.log("Connection canceled.")
+        }
+      }
+    })
+  }
+  ```
+
+Both ways are valid.
+
+
 ## Custom Headers
 
 You can apply custom headers to the connection
