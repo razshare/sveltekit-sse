@@ -20,16 +20,12 @@ const CAT_QUOTES = [
 
 /**
  *
- * @returns {Array<Quote>}
+ * @returns {Quote}
  */
-function findAThousandCatQuotes() {
-  return Array(1000)
-    .fill(0)
-    .map(function pass(_, index) {
-      const key = Math.floor(Math.random() * CAT_QUOTES.length)
-      const quote = CAT_QUOTES[key]
-      return { id: `item-${index}`, value: quote }
-    })
+function findCatQuote() {
+  const index = Math.floor(Math.random() * CAT_QUOTES.length)
+  const quote = CAT_QUOTES[index]
+  return { id: `item-${index}`, value: quote }
 }
 
 /**
@@ -44,21 +40,29 @@ function delay(milliseconds) {
 
 /**
  * Send some data to the client
- * @param {{emit:import('$lib/types').EmitterOfManyEvents}} payload
+ * @param {import('$lib/events.js').Connection} payload
  */
-async function dumpData({ emit }) {
+async function dumpData({ emit, lock }) {
   for (let i = 0; i < 10; i++) {
-    const catQuotes = findAThousandCatQuotes()
-    const stringifiedCatQuote = JSON.stringify(catQuotes)
-    emit('thousand-cat-quotes', stringifiedCatQuote)
+    const catQuote = findCatQuote()
+    const stringifiedCatQuote = JSON.stringify(catQuote)
+    const { error } = emit('cat-quote', stringifiedCatQuote)
+    if (error) {
+      console.error(error.message)
+      return
+    }
     await delay(1000)
   }
+  lock.set(false) // release the lock
 }
 
-export function GET() {
-  return events(async function run(emit) {
-    await new Promise(function start(stop) {
-      dumpData({ emit }).then(stop)
-    })
-  }).toResponse()
+export function POST({ request }) {
+  return events({
+    request,
+    timeout: 3000,
+    start(connection) {
+      dumpData(connection)
+    },
+    cancel() {},
+  })
 }

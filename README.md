@@ -12,98 +12,6 @@ Create your server sent event with:
 
 ```js
 // src/routes/custom-event/+server.js
-import { event } from 'sveltekit-sse'
-
-/**
- * @param {number} milliseconds
- * @returns
- */
-function delay(milliseconds) {
-  return new Promise(function run(r) {
-    setTimeout(r, milliseconds)
-  })
-}
-
-export function GET() {
-  return event(async function run(emit) {
-    while (true) {
-      emit(`${Date.now()}`)
-      await delay(1000)
-    }
-  }).toResponse()
-}
-```
-
-<details>
-  <summary>(expand for more details)</summary>
-
-  The stream and http connection will end whenever the callback passed to `event()` resolves.\
-  \
-  The infinite loop is of great importance in this case because it prevents the callback from resolving and keeps the connection to the client open.\
-  You can end the connection at any time by `return`ing or `break`ing the loop
-  ```js
-  export function GET() {
-    let i = 0
-    return event(async function run(emit){
-      while (true) {
-        emit(`${Date.now()}`)
-        await delay(1000)
-        if(9 === i) {
-            return
-        }
-        i++
-      }
-    }).toResponse()
-  }
-  ```
-  This will complete the response after 10 iterations.
-
-  You don't have to use an infinite loop, you can achieve the same result using any other kind of semaphore-like behavior.
-
-  For example using `Promise`
-
-  ```js
-  export function GET() {
-      let i = 0
-      return event(async function run(emit){
-          await new Promise(function run(stop){  // this line will prevent the callback from resolving
-              while (i < 10) {
-                  emit(`${Date.now()}`)
-                  await delay(1000)
-                  i++
-              }
-              stop()  // if you omit this line, the promise will not resolve and the connection will remain open
-          })
-      }).toResponse()
-  }
-  ```
-  Without calling `stop()`, even though the `while` loop is not infinite anymore, the connection will remain open and you will leak memory this way.
-
-  Read more about this topic in the [locking section](#locking).
-</details>
-
-and consume the source on your client with:
-
-```svelte
-<script>
-  // src/routes/+page.svelte
-  import { source } from 'sveltekit-sse'
-  const value = source('/custom-event')
-</script>
-
-{$value}
-```
-
-## Multiple events
-
-All major browsers will limit the number of parallel http connections.
-
-One solution to this problem is using http2.
-
-However, for various reasons not everyone can serve http2 responses, in that case you can use the same http1 connection to emit multiple events.
-
-```js
-// src/routes/events/+server.js
 import { events } from 'sveltekit-sse'
 
 /**
@@ -111,40 +19,119 @@ import { events } from 'sveltekit-sse'
  * @returns
  */
 function delay(milliseconds) {
-  return new Promise(function run(r) {
-    setTimeout(r, milliseconds)
+  return new Promise(function run(resolve) {
+    setTimeout(resolve, milliseconds)
   })
 }
 
-export function GET() {
-  return events(async function run(emit) {
-    while (true) {
-      emit('event-1', `/events (1) says: ${Date.now()}`)
-      emit('event-2', `/events (2) says: ${Date.now()}`)
-      emit('event-3', `/events (3) says: ${Date.now()}`)
-      await delay(2000)
-    }
-  }).toResponse()
+export function POST({ request }) {
+  return events({
+    request,
+    start({emit}) {
+      while(true){
+        emit('message', 'hello world')
+        await delay(1000)
+      }
+    },
+  })
 }
 ```
 
-and consume it on your client with:
+and consume the source on your client with:
 
 ```svelte
 <script>
+  // src/routes/+page.svelte
   import { source } from 'sveltekit-sse'
-
-  const connection = source('/events')
-  const value1 = connection.select('event-1')
-  const value2 = connection.select('event-2')
-  const value3 = connection.select('event-3')
+  const value = source('/custom-event').select('message')
 </script>
 
-{$value1}
-<br />
-{$value2}
-<br />
-{$value3}
+{$value}
+```
+
+
+> [!CAUTION]
+> Due to how the [beacon api](#beacon) works, you must write all your logic within the `start()` function while on the server.
+
+
+In other words, this is wrong
+
+```js
+export function POST({ request }) {
+  const message = 'hello world'   // <=== wrong, move this below
+  return events({
+    request,
+    start({emit}) {
+      while(true){
+        emit('message', message)
+        await delay(1000)
+      }
+    },
+  })
+}
+```
+
+And this is the correct way to do it
+
+```js
+export function POST({ request }) {
+  return events({
+    request,
+    start({emit}) {
+      const message = 'hello world'   // <=== this is correct
+      while(true){
+        emit('message', message)
+        await delay(1000)
+      }
+    },
+  })
+}
+```
+
+
+## Reconnect
+
+You can reconnect to the stream whenever the stream closes
+
+```html
+<script>
+  import { source } from "sveltekit-sse"
+  
+  const data = source('/custom-event', {
+    close({connect}){
+      console.log('reconnecting...')
+      connect()
+    }
+  })
+
+  setTimeout(function run() {
+    data.close()
+  }, 3000)
+</script>
+
+{$data}
+```
+
+## Custom Headers
+
+You can apply custom headers to the connection
+
+```html
+<script>
+  import { source } from 'sveltekit-sse'
+
+  const connection = source('/event', {
+    options: {
+      headers: {
+        Authorization: 'Bearer ...',
+      }
+    }
+  })
+
+  const data = connection.select('message')
+</script>
+
+{$data}
 ```
 
 ## Transform
@@ -155,7 +142,7 @@ The `transform` method receives a `ReadableStream`, which you can use to read in
 
 Here's an example how to use it.
 
-```svelte
+```html
 <script>
   import { source } from 'sveltekit-sse'
 
@@ -200,52 +187,6 @@ Here's an example how to use it.
 </script>
 ```
 
-## Custom Headers
-
-The standard `EventSource` class does not permit setting custom headers or manipulating the underlying request options.
-
-This library achieves client side event sourcing using `fetch`.
-
-> [!NOTE]
-> Custom headers are only available since version `0.4.0`.
-
-The following will set a `Authorization: Bearer ...` header to the underlying http request.
-
-```svelte
-<script>
-  import { source } from 'sveltekit-sse'
-
-  const data = source('/event', {
-    headers: {
-      Authorization: 'Bearer ...',
-    },
-  })
-</script>
-
-{$data}
-```
-
-## Reconnect
-
-You can reconnect to the stream whenever the stream closes by invoking `Event::connect`.
-
-```html
-<script>
-  import { source } from 'sveltekit-sse'
-
-  const data = source('/custom-event').onClose(function stop({ connect }) {
-    connect()
-    console.log('reconnecting')
-  })
-
-  setTimeout(function run() {
-    data.close()
-  }, 5000)
-</script>
-
-{$data}
-```
-
 ## Json
 
 You can parse incoming messages from the source as json using `source::select::json`.
@@ -256,95 +197,105 @@ You can parse incoming messages from the source as json using `source::select::j
 
   const connection = source('/custom-event')
   const json = connection.select('message').json(
-    function onJsonParseError({error, currentRawValue, previousParsedValue}){
-      console.error(`Could not parse "${currentRawValue}" as json.`, error)
-      return previousParsedValue  // this will be the new value of the store
+    function or({error, raw, previous}){
+      console.error(`Could not parse "${raw}" as json.`, error)
+      return previous  // This will be the new value of the store
     }
   )
   $: console.log({$json})
 </svelte>
 ```
 
-When a parsing error occurs, `onJsonParseError` is invoked.\
-Whatever this function returns will become the new value of the store, in the example above `previousParsedValue`, which is the previous (valid) value of the store.
+When a parsing error occurs, `or` is invoked.\
+Whatever this function returns will become the new value of the store, in the example above `previous`, which is the previous (valid) value of the store.
 
 ## Locking
 
-More often than not for an SSE endpoint to be useful you usually need to keep the connection alive for long periods of time.
+All streams are locked server side by default, meaning the server will keep the connection alive indefinitely.
 
-The default behavior for any event is to close the connection immediately as soon as your event callback resolves.
-
-For example
+The locking mechanism is achieved through a `Writable<bool>`, which you can access from the `start` function.
 
 ```js
-export function GET() {
-  return event(async function run(emit) {
-    emit('hello world')
-  }).toResponse()
+export function POST({ request }) {
+  return events({
+    request,
+    start({emit, lock}) {
+      emit('message', 'hello world')
+      setTimeout(function unlock(){
+        lock.set(false)
+      },2000)
+    },
+  })
 }
 ```
 
-This endpoint will emit the string `hello world` and immediately close the connection.
+The above code `emit`s the `hello world` string to the `message` event and closes the stream after 2 seconds.
 
-This is not very useful.
-
-Usually you need to consume data from your database or some other I/O resource over longer periods of time.\
-Regardless of the origin of your data, you most likely will need to keep the connection alive.
-
-One way of doing that is using a `Promise`
+> [!WARNING]
+> You should not send any more messages after invoking `lock.set(false)` otherwise your `emit` function will result into an error.\
+> The resulting error is wrapper in `Unsafe<void>`, which you can manage using conditionals
 ```js
-export function GET() {
-  return event(async function run(emit) {
-    await new Promise(function run(stop){
-      // imagine `myIo` is some I/O data provider you need to consume
-      myIo.addEventListener("data", function run(data){
-        emit(data)
-      })
-      myIo.addEventListener("close", stop)
-      myIo.addEventListener("error", stop)
-    })
-  }).toResponse()
+lock.set(false)
+const {error} = emit('message', 'I have a bad feeling about this...')
+if(error){
+  console.error(error)
+  return
 }
 ```
 
-This looks fine to me personally, but some might prefer a `more svelte-like` 
-way of doing things, that is: using `EventsOptions::locked`.
+## Beacon
 
-Both `event` and `events` take a second parameter, an `EventsOptions` object with the following signature
+Currently there is no way to detect canceled http connections in SvelteKit.
 
-```js
-/**
- * @typedef EventsOptions
- * @property {false|import("svelte/store").Writable<boolean>} locked
- */
-```
+This poses a big issue for server sent events because that means there is no way to detect when to automatically un`lock` the stream and stop emitting data.
 
-When `locked` is a valid writable store, the event will automatically enter a locked state and will wait for the `locked` store to be set to `false`.
+The current solution to this problem is using [beacons](https://developer.mozilla.org/en-US/docs/Web/API/Navigator/sendBeacon) to keep the stream alive.
 
-```js
-export function GET() {
-  const locked = writable(true)
-  return event(async function run(emit) {
-    myIo.addEventListener("data", function run(data){
-      emit(data)
-    })
-    myIo.addEventListener("close", function close(){
-      locked.set(false)
-    })
-    myIo.addEventListener("error", function error(){
-      locked.set(false)
-    })
-  },
-  {locked}
-  ).toResponse()
-}
-```
+The algorithm is simple in theory, but it requires both server and client to cooperate
 
-After the store is set to `false` the event stream and connection will both close immediately.
-
+- **Server:** _Accept client connection._
+- **Server:** _Open a stream to the client._
+- **Server:** _Schedule a stream destructor in `T` milliseconds._
+- **Client:** _Send a beacon to the server to verify you're alive._
 > [!NOTE]
-> This means you should not emit anything after unlocking the event.\
-> If you do, you'll get an error from the underlying `ReadableStream`, which by that point is closed.
+> There's actually a sort of [session being managed](./src/lib/events.js#309) in this step in order to identify each client.
+
+
+- **Server:** _Reset the stream destructor [if the beacon is valid](./src/lib/events.js#279)._
+- Repeat.
+
+The key part here is obviously `T`, which lives on both the client and the server.\
+Let's call them `TClient` and `TServer`.\
+
+In order for this to work `TClient` should always be lesser than `TServer`, and possibly it should also take into account some the network latency and add a bit of padding.
+
+
+
+You can set `TClient` as you're invoking `source`
+
+```js
+const connection = source('/events', {
+  beacon:3000,  // <=== this is TClient
+})
+```
+
+And `TServer` as you-re invoking `events`
+
+```js
+export function POST({request}){
+  return events({
+    request,
+    timeout: 5000,  // <=== this is TServer
+    start(){
+      // ...
+    }
+  })
+}
+```
+
+You don't need to manually set these variables up yourself, but you can.\
+The default values are `beacon: 5000` and `timeout: 7000`.
+
 
 ## Other notes
 
