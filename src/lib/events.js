@@ -49,25 +49,20 @@ function createEmitter({ controller, context }) {
         `Event name must not contain new line characters, received "${eventName}".`,
       )
     }
-
-    controller.enqueue(encoder.encode(`id: ${id}\nevent: ${eventName}\n`))
-    const chunks = data.split('\n')
-    for (const chunk of chunks) {
-      try {
+    try {
+      controller.enqueue(encoder.encode(`id: ${id}\nevent: ${eventName}\n`))
+      const chunks = data.split('\n')
+      for (const chunk of chunks) {
         controller.enqueue(
           encoder.encode(`data: ${encodeURIComponent(chunk)}\n`),
         )
-      } catch (e) {
-        return error(e)
       }
-    }
-    try {
       controller.enqueue(encoder.encode('\n'))
+      id++
+      return ok()
     } catch (e) {
       return error(e)
     }
-    id++
-    return ok()
   }
 }
 
@@ -145,7 +140,12 @@ function createStream({ start, id, lock, context, cancel, timeout }) {
           return false
         }
 
-        controller.close()
+        try {
+          controller.close()
+        } catch {
+          // Do nothing.
+          // This means the client has already disconnected without notice.
+        }
         context.connected = false
 
         const cancelInline = await started
