@@ -300,7 +300,7 @@ The algorithm is simple in theory, but it requires both server and client to coo
 > There's actually a sort of [session being managed](https://github.com/tncrazvan/sveltekit-sse/blob/fbea4c7b75917f3c35a1e39d021f47908d416595/src/lib/events.js#L278-L283) in this step in order to identify each client.
 
 
-- **Server:** _Reset the stream destructor [if the beacon is valid]([./src/lib/events.js#279](https://github.com/tncrazvan/sveltekit-sse/blob/fbea4c7b75917f3c35a1e39d021f47908d416595/src/lib/events.js#L284-L292))._
+- **Server:** _Reset the stream destructor [if the beacon is valid](https://github.com/tncrazvan/sveltekit-sse/blob/fbea4c7b75917f3c35a1e39d021f47908d416595/src/lib/events.js#L284-L292)._
 - Repeat.
 
 The key part here is obviously `T`, which lives on both the client and the server.\
