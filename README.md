@@ -306,7 +306,8 @@ The algorithm is simple in theory, but it requires both server and client to coo
 The key part here is obviously `T`, which lives on both the client and the server.\
 Let's call them `TClient` and `TServer`.
 
-In order for this to work `TClient` should always be lesser than `TServer`, and possibly it should also take into account some the network latency and add a bit of padding.
+In order for this to work `TClient` should always be lesser than `TServer`.\
+If possible, you should also take into account network latency and add a bit more padding to `TClient`.
 
 
 
