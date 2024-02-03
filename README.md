@@ -319,7 +319,7 @@ const connection = source('/events', {
 })
 ```
 
-And `TServer` as you-re invoking `events`
+And `TServer` as you're invoking `events`
 
 ```js
 export function POST({request}){
