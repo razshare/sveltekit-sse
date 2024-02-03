@@ -307,7 +307,7 @@ The key part here is obviously `T`, which lives on both the client and the serve
 Let's call them `TClient` and `TServer`.
 
 In order for this to work `TClient` should always be lesser than `TServer`.\
-If possible, you should also take into account network latency and add a bit more padding to `TClient`.
+If possible, you should also take into account network latency and add a bit more padding to either `TClient` of `TServer`.
 
 
 
