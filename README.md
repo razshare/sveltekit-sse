@@ -292,16 +292,15 @@ The current solution to this problem is using [beacons](https://developer.mozill
 
 The algorithm is simple in theory, but it requires both server and client to cooperate
 
-- **Server:** _Accept client connection._
-- **Server:** _Open a stream to the client._
-- **Server:** _Schedule a stream destructor in `T` milliseconds._
-- **Client:** _Send a beacon to the server to verify you're alive._
+1. **Server:** _Accept client connection._
+2. **Server:** _Open a stream to the client._
+3. **Server:** _Schedule a stream destructor in `T` milliseconds._
+4. **Client:** _Send a beacon to the server to verify you're alive._
 > [!NOTE]
 > There's actually a sort of [session being managed](https://github.com/tncrazvan/sveltekit-sse/blob/fbea4c7b75917f3c35a1e39d021f47908d416595/src/lib/events.js#L278-L283) in this step in order to identify each client.
 
-
-- **Server:** _Reset the stream destructor [if the beacon is valid](https://github.com/tncrazvan/sveltekit-sse/blob/fbea4c7b75917f3c35a1e39d021f47908d416595/src/lib/events.js#L284-L292)._
-- Repeat.
+5. **Server:** _Reset the stream destructor [if the beacon is valid](https://github.com/tncrazvan/sveltekit-sse/blob/fbea4c7b75917f3c35a1e39d021f47908d416595/src/lib/events.js#L284-L292)._
+6. Repeat from _step 3_.
 
 The key part here is obviously `T`, which lives on both the client and the server.\
 Let's call them `TClient` and `TServer`.
