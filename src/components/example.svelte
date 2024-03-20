@@ -2,6 +2,7 @@
   import { source } from '$lib/source.js'
   const connection = source('/events')
   const channel = connection.select('cat-quote')
+
   /**
    * @type {import('svelte/store').Readable<null|import('../routes/events/+server').Quote>}
    */

@@ -255,7 +255,14 @@ function createTransformer({ connected, eventName }) {
  */
 
 /**
- * @template T
+ * @template [T = any]
+ * @callback JsonPredicate
+ * @param {JsonOrPayload<T>} payload
+ * @returns {null|T}
+ */
+
+/**
+ * @template [T = any]
  * @param {JsonOrPayload<T>} payload
  * @returns {null|T}
  */
@@ -375,9 +382,8 @@ export function source(
         /**
          * Parse each message as Json.
          * @template [T = any]
-         * @param {typeof defaultJsonOrPredicate} or A function that's invoked when a `JSON.parse` error is detected.
+         * @param {JsonPredicate<T>} or A function that's invoked when a `JSON.parse` error is detected.
          * The resulting value of this function will become the new value of the store.
-         * @returns {import('svelte/store').Readable<T|null>}
          */
         json(or = defaultJsonOrPredicate) {
           if (!IS_BROWSER) {
