@@ -303,11 +303,11 @@ export function source(
   { close, error, beacon = 5000, options = {} } = {},
 ) {
   /** @type {SourceState} */
-  let state = {
+  const state = {
     eventsCounter: 0,
   }
   /** @type {Map<string,import('svelte/store').Readable<string>>} */
-  let readables = new Map()
+  const readables = new Map()
 
   const connected = connect({ resource: from, beacon, options })
 
