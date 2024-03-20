@@ -22,7 +22,7 @@ function uuid({ short } = { short: false }) {
 /**
  *
  * @param {CreateEmitterPayload} payload
- * @returns {(eventName:string,data:string)=>import('./types').Unsafe<void>}}
+ * @returns {import('./types').EmitterOfManyEvents}
  */
 function createEmitter({ controller, context }) {
   let id = 1

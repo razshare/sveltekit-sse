@@ -35,3 +35,7 @@ export {}
 /**
  * @typedef {(event:import('./types').Event)=>void} EventListener
  */
+
+/**
+ * @typedef {(eventName:string,data:string)=>import('./types').Unsafe<void>} EmitterOfManyEvents
+ */
