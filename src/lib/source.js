@@ -374,10 +374,10 @@ export function source(
         }),
         /**
          * Parse each message as Json.
-         * @template T
+         * @template [T = any]
          * @param {typeof defaultJsonOrPredicate} or A function that's invoked when a `JSON.parse` error is detected.
          * The resulting value of this function will become the new value of the store.
-         * @returns
+         * @returns {import('svelte/store').Readable<T|null>}
          */
         json(or = defaultJsonOrPredicate) {
           if (!IS_BROWSER) {
