@@ -27,7 +27,7 @@ function delay(milliseconds) {
 export function POST({ request }) {
   return events({
     request,
-    start({emit}) {
+    async start({emit}) {
       while(true){
         emit('message', 'hello world')
         await delay(1000)
@@ -61,7 +61,7 @@ export function POST({ request }) {
   const message = 'hello world'   // <=== wrong, move this below
   return events({
     request,
-    start({emit}) {
+    async start({emit}) {
       while(true){
         emit('message', message)
         await delay(1000)
@@ -77,7 +77,7 @@ And this is the correct way to do it
 export function POST({ request }) {
   return events({
     request,
-    start({emit}) {
+    async start({emit}) {
       const message = 'hello world'   // <=== this is correct
       while(true){
         emit('message', message)
