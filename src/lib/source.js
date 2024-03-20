@@ -384,6 +384,7 @@ export function source(
          * @template [T = any]
          * @param {JsonPredicate<T>} or A function that's invoked when a `JSON.parse` error is detected.
          * The resulting value of this function will become the new value of the store.
+         * @returns {import('svelte/store').Readable<null|T>}
          */
         json(or = defaultJsonOrPredicate) {
           if (!IS_BROWSER) {
