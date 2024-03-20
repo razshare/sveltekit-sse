@@ -375,18 +375,8 @@ export function source(
         /**
          * Parse each message as Json.
          * @template T
-         * @param {typeof defaultJsonOrPredicate} or A function that's invoked when a `JSON.parse` error is detected.
-         * > **Note**\
-         * > The resulting value of this function will become the new value of the store.
-         * > ## Example
-         * > ```js
-         * > source({from:'/events'}).json(
-         * >    function or({previous, value}){
-         * >      console.error(value.error)
-         * >      return previous
-         * >    }
-         * >  )
-         * > ```
+         * @param {typeof defaultJsonOrPredicate} or A function that's invoked when a `JSON.parse` error is detected.\
+         * The resulting value of this function will become the new value of the store.
          * @returns
          */
         json(or = defaultJsonOrPredicate) {
