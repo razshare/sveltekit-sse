@@ -215,7 +215,7 @@ function createStream({ start, id, lock, context, cancel, timeout }) {
 /**
  * @callback Start
  * @param {Connection} payload
- * @returns {void|Cancel|PromiseLike<Cancel>}
+ * @returns {void|Cancel|PromiseLike<void>|PromiseLike<Cancel>}
  */
 
 /**
