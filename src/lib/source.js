@@ -98,8 +98,9 @@ function connect({ resource, beacon = 5000, options = {} }) {
         if (beacon <= 0) {
           return
         }
+        const path = resource.toString().split('?', 2)[0] ?? '/'
         interval = setInterval(function run() {
-          navigator.sendBeacon(resource.toString() + '?' + id)
+          navigator.sendBeacon(`${path}?x-sse-id=${id}`)
         }, beacon)
       },
     })

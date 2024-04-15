@@ -276,8 +276,20 @@ export function events({ start, cancel, request, headers, timeout = 7000 }) {
    * @type {StreamContext}
    */
   const context = { connected: true }
-  const parts = request.url.split('?')
-  let id = 2 === parts.length ? parts[1] ?? '' : ''
+
+  const search = request.url.split('?')[1] ?? ''
+
+  let id = ''
+
+  if (search.length > 0) {
+    const params = new URLSearchParams(search)
+    if (params.has('x-sse-id')) {
+      id = params.get('x-sse-id') ?? ''
+    }
+  }
+
+  // const parts = request.url.split('?')
+  // let id = 2 === parts.length ? parts[1] ?? '' : ''
 
   if (id) {
     const timeoutOld = timeouts.get(id)
