@@ -32,23 +32,18 @@ const connected = new Map()
 /**
  * @typedef DisconnectPayload
  * @property {RequestInfo|URL} resource Path to the stream.
+ * @property {import('./types').EventListener} [close] Do something whenever the connection closes.
+ * @property {import('./types').EventListener} [error] Do something whenever there are errors.
  */
 
 /**
  * Close the source connection `resource`. This will trigger `close`.
  * @param {DisconnectPayload} payload
  */
-async function disconnect({ resource }) {
+async function disconnect({ resource, close, error }) {
   const url = `${resource}`
   const reference = connected.get(url)
   if (reference) {
-    const { eventSource } = reference
-
-    if (eventSource.readyState !== CLOSED) {
-      // await reference.eventSource.close()
-      reference.eventSource.close({})
-      reference.stopBeacon()
-    }
     reference.connectionsCounter--
 
     if (reference.connectionsCounter < 0) {
@@ -57,6 +52,14 @@ async function disconnect({ resource }) {
 
     if (reference.connectionsCounter === 0) {
       connected.delete(url)
+      reference.stopBeacon()
+      reference.eventSource.close({})
+    }
+    if (close) {
+      reference.eventSource.removeEventListener('close', close)
+    }
+    if (error) {
+      reference.eventSource.removeEventListener('error', error)
     }
   }
 }
@@ -72,6 +75,8 @@ async function disconnect({ resource }) {
  * > Remember that if you disable this behavior but the server sent event still declares
  * > a `timeout`, the stream will close without notice after the `timeout` expires on the server.
  * @property {Options} [options] Options for the underlying http request.
+ * @property {import('./types').EventListener} [close] Do something whenever the connection closes.
+ * @property {import('./types').EventListener} [error] Do something whenever there are errors.
  */
 
 /**
@@ -79,7 +84,7 @@ async function disconnect({ resource }) {
  * @param {ConnectPayload} payload
  * @returns
  */
-function connect({ resource, beacon = 5000, options = {} }) {
+function connect({ resource, beacon = 5000, close, error, options = {} }) {
   const url = `${resource}`
   if (!connected.has(url)) {
     /**
@@ -116,6 +121,14 @@ function connect({ resource, beacon = 5000, options = {} }) {
 
     eventSource.addEventListener('close', stopBeacon)
     eventSource.addEventListener('error', stopBeacon)
+
+    if (close) {
+      eventSource.addEventListener('close', close)
+    }
+
+    if (error) {
+      eventSource.addEventListener('error', error)
+    }
 
     const freshReference = {
       resource,
@@ -226,14 +239,30 @@ function createTransformer({ connected, eventName }) {
     }
 
     const { eventSource } = connected
+
+    /**
+     * @type {ReadableStreamDefaultController<string>}
+     */
+    let controller
+
+    /**
+     *
+     * @param {import('./types').Event} event
+     */
+    function run(event) {
+      controller.enqueue(event.data)
+    }
+
     /**
      * @type {ReadableStream<string>}
      */
     const readableStream = new ReadableStream({
-      start(controller) {
-        eventSource.addEventListener(eventName, function run(event) {
-          controller.enqueue(event.data)
-        })
+      start(controllerLocal) {
+        controller = controllerLocal
+        eventSource.addEventListener(eventName, run)
+      },
+      cancel() {
+        eventSource.removeEventListener(eventName, run)
       },
     })
 
@@ -317,24 +346,17 @@ export function source(
   /** @type {Map<string,import('svelte/store').Readable<string>>} */
   const readables = new Map()
 
-  const connected = connect({ resource: from, beacon, options })
+  const connected = connect({ resource: from, beacon, options, close, error })
 
-  const { eventSource } = connected
-
-  if (error) {
-    eventSource.addEventListener('error', error)
-  }
-
-  if (close) {
-    eventSource.addEventListener('close', close)
-  }
+  let closeLocal = close
+  let errorLocal = error
 
   return {
     close() {
       if (!IS_BROWSER) {
         return Promise.resolve()
       }
-      return disconnect({ resource: from })
+      return disconnect({ resource: from, close, error })
     },
     /**
      *  Select an event from the stream.
@@ -391,19 +413,19 @@ export function source(
           if (!IS_BROWSER) {
             return readable(null)
           }
-          const transformed = this.transform(function run(data) {
+          const transformed = this.transform(function run(stream) {
             /**
              * @type {null|T}
              */
             let previous = null
-            const reader = data.getReader()
+            const reader = stream.getReader()
             return readable(
               previous,
               /**
                * @type {import('svelte/store').StartStopNotifier<null|T>}
                */
               function start(set) {
-                const read = async function run() {
+                async function read() {
                   try {
                     const { done, value: raw } = await reader.read()
                     if (done) {
@@ -436,9 +458,13 @@ export function source(
                 }
                 read()
                 return function stop() {
-                  // debugger
-                  disconnect({ resource: from })
-                  reader.cancel()
+                  reader.cancel().then(function run() {
+                    disconnect({
+                      resource: from,
+                      close: closeLocal,
+                      error: errorLocal,
+                    })
+                  })
                 }
               },
             )
