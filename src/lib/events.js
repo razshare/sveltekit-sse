@@ -182,39 +182,8 @@ function createStream({ start, id, lock, context, cancel, timeout }) {
  */
 
 /**
- * @typedef Connection
- * @property {(eventName:string,data:string)=>import('./types').Unsafe<void>} emit Emit events to the client.\
- * The `Unsafe<void>` wrapper may contain an error
- * ## Example
- * ```js
- * const {error} = emit('message', 'hello world')
- * if(error){
- *  console.error(error)
- *  lock.set(false)
- *  return
- * }
- * ```
- * @property {import("svelte/store").Writable<boolean>} lock This store is initialized with `true`,
- * it prevents the underlying `Response` from resolving automatically.\
- * Set it to `false` in order to unlock the `Response` and end the stream immediately.
- *
- * > **Note**\
- * > You shouldn't `emit` any more events after setting the lock to `false`.\
- * > Attempting to emit more data afterwards will result into an error.
- * > ```js
- * > lock.set(false)
- * > const {error} = emit('message', 'hello world')
- * > if(error){
- * >  console.error(error) // "Client disconnected from the stream."
- * >  return
- * > }
- * > ```
- * @property {UnderlyingDefaultSource<string>} source
- */
-
-/**
  * @callback Start
- * @param {Connection} payload
+ * @param {import('./types').Connection} payload
  * @returns {void|Cancel|PromiseLike<void>|PromiseLike<Cancel>}
  */
 
