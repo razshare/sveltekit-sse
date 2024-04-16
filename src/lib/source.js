@@ -29,6 +29,10 @@ import { IS_BROWSER } from './constants'
  * */
 const connected = new Map()
 
+setInterval(function run() {
+  console.log(connected)
+}, 1000)
+
 /**
  * @typedef DisconnectPayload
  * @property {RequestInfo|URL} resource Path to the stream.
@@ -190,6 +194,9 @@ function connect({ resource, beacon = 5000, close, error, options = {} }) {
  * @returns
  */
 function createStore({ connected, eventName, readables, state }) {
+  if (!IS_BROWSER) {
+    return readable('')
+  }
   const { eventSource, resource } = connected
   return readable('', function start(set) {
     /**
@@ -346,7 +353,14 @@ export function source(
   /** @type {Map<string,import('svelte/store').Readable<string>>} */
   const readables = new Map()
 
-  const connected = connect({ resource: from, beacon, options, close, error })
+  /**
+   * @type {Connected}
+   */
+  let connected
+
+  if (IS_BROWSER) {
+    connected = connect({ resource: from, beacon, options, close, error })
+  }
 
   let closeLocal = close
   let errorLocal = error
