@@ -29,10 +29,6 @@ import { IS_BROWSER } from './constants'
  * */
 const connected = new Map()
 
-setInterval(function run() {
-  console.log(connected)
-}, 1000)
-
 /**
  * @typedef DisconnectPayload
  * @property {RequestInfo|URL} resource Path to the stream.
