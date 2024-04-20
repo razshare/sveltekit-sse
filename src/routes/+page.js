@@ -1,8 +1,6 @@
 import { source } from '$lib/source.js'
 
 export function load({ url }) {
-  console.log('loading...')
-
   const searchParams = new URLSearchParams(url.search)
 
   /**
