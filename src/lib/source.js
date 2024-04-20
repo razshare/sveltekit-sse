@@ -217,7 +217,7 @@ export function source(
         })
 
         return function stop() {
-          connected.eventSource.validate()
+          connected.eventSource.flush()
           unsubscribe()
         }
       })

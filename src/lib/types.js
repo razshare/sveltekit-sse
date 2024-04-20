@@ -17,7 +17,6 @@ export {}
  * @property {string} event Name of the event.
  * @property {string} data Message data.
  * @property {Error} [error] Something went wrong.
- * @property {boolean} local Event has been triggered locally.
  * @property {function():void} connect Connect the stream.
  * > **Note**\
  * > You can use this whenever the stream disconnects for any reason in order to reconnect.

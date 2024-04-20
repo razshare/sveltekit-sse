@@ -68,6 +68,12 @@ export const CLOSED = 2
  * }>}
  */
 const cache = new Map()
+
+/**
+ * @type {Map<string, AbortController>}
+ */
+const controllers = new Map()
+
 /**
  * @type {Map<string, number>}
  */
@@ -88,15 +94,57 @@ export function stream({
 }) {
   const key = btoa(JSON.stringify({ resource, options }))
 
-  const controller = new AbortController()
+  /** @type {StreamState} */
+  let readyState = CONNECTING
+
+  const configuration = {
+    onClose: [onClose],
+    onError: [onError],
+    onMessage: [onMessage],
+  }
 
   const result = {
-    validate() {
+    flush() {
       if (!cache.has(key)) {
-        controller.abort()
+        this.controller.abort()
       }
     },
     get controller() {
+      let fresh = true
+      /**
+       * @type {AbortController}
+       */
+      let controller
+      if (controllers.has(key)) {
+        const controllerLocal = controllers.get(key)
+        if (controllerLocal) {
+          controller = controllerLocal
+          fresh = false
+        } else {
+          controller = new AbortController()
+          controllers.set(key, controller)
+        }
+      } else {
+        controller = new AbortController()
+        controllers.set(key, controller)
+      }
+
+      if (fresh) {
+        controller.signal.addEventListener('abort', function closed() {
+          readyState = CLOSED
+          for (const onClose of configuration.onClose) {
+            onClose({
+              id: '',
+              event: 'close',
+              data: '',
+              connect,
+              controller: controller,
+            })
+          }
+          cache.delete(key)
+        })
+      }
+
       return controller
     },
     /**
@@ -121,18 +169,7 @@ export function stream({
     return result
   }
 
-  const configuration = {
-    onClose: [onClose],
-    onError: [onError],
-    onMessage: [onMessage],
-  }
-
   cache.set(key, configuration)
-
-  /**
-   * @type {StreamState}
-   */
-  let readyState = CONNECTING
 
   const openWhenHidden = true
   const rest = options ? { ...options } : {}
@@ -169,8 +206,7 @@ export function stream({
             event,
             data,
             connect,
-            controller,
-            local: false,
+            controller: result.controller,
           })
         }
         cache.delete(key)
@@ -183,8 +219,7 @@ export function stream({
             event: 'close',
             data: '',
             connect,
-            controller,
-            local: false,
+            controller: result.controller,
           })
         }
         cache.delete(key)
@@ -198,12 +233,11 @@ export function stream({
             data: '',
             error,
             connect,
-            controller,
-            local: false,
+            controller: result.controller,
           })
         }
       },
-      signal: controller.signal,
+      signal: result.controller.signal,
     })
     readyState = OPEN
   }
