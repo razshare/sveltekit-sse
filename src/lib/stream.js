@@ -26,10 +26,13 @@ export const CLOSED = 2
 
 /**
  * @typedef StreamPayload
- * @property {RequestInfo|URL} resource
+ * @property {string} resource
  * @property {Options} options
  * @property {number} beacon
- * @property {IdFound} [onIdFound]
+ * @property {IdFound} onIdFound
+ * @property {import('./types').EventListener} onMessage
+ * @property {import('./types').EventListener} onError
+ * @property {import('./types').EventListener} onClose
  */
 
 /**
@@ -44,11 +47,13 @@ export const CLOSED = 2
 /**
  * @typedef SendErrorPayload
  * @property {Error} [error]
+ * @property {boolean} local
  */
 
 /**
  * @typedef SendClosePayload
  * @property {Error} [error]
+ * @property {boolean} local
  */
 
 /**
@@ -56,22 +61,79 @@ export const CLOSED = 2
  */
 
 /**
+ * @type {Map<string, {
+ *  onMessage: Array<import('./types').EventListener>,
+ *  onError: Array<import('./types').EventListener>,
+ *  onClose: Array<import('./types').EventListener>,
+ * }>}
+ */
+const cache = new Map()
+/**
+ * @type {Map<string, number>}
+ */
+const connecting = new Map()
+
+/**
  *
  * @param {StreamPayload} payload
  * @returns
  */
-export function stream({ resource, options, onIdFound }) {
-  /**
-   * @type {Map<string, Array<import('./types').EventListener>>}
-   */
-  const events = new Map()
+export function stream({
+  resource,
+  options,
+  onIdFound,
+  onMessage,
+  onError,
+  onClose,
+}) {
+  const key = btoa(JSON.stringify({ resource, options }))
+
+  const controller = new AbortController()
+
+  const result = {
+    validate() {
+      if (!cache.has(key)) {
+        controller.abort()
+      }
+    },
+    get controller() {
+      return controller
+    },
+    /**
+     * @returns {string}
+     */
+    get resource() {
+      return resource
+    },
+    /**
+     * @returns {StreamState}
+     */
+    get readyState() {
+      return readyState
+    },
+  }
+
+  if (cache.has(key)) {
+    const configuration = cache.get(key)
+    configuration?.onMessage.push(onMessage)
+    configuration?.onError.push(onError)
+    configuration?.onClose.push(onClose)
+    return result
+  }
+
+  const configuration = {
+    onClose: [onClose],
+    onError: [onError],
+    onMessage: [onMessage],
+  }
+
+  cache.set(key, configuration)
 
   /**
    * @type {StreamState}
    */
   let readyState = CONNECTING
 
-  const controller = new AbortController()
   const openWhenHidden = true
   const rest = options ? { ...options } : {}
   async function connect() {
@@ -79,11 +141,18 @@ export function stream({ resource, options, onIdFound }) {
       return
     }
 
+    if (connecting.has(key)) {
+      return
+    }
+
+    connecting.set(key, Date.now())
+
     await fetchEventSource(`${resource}`, {
       openWhenHidden,
       ...rest,
       method: 'POST',
       async onopen({ headers }) {
+        connecting.delete(key)
         if (!onIdFound) {
           return
         }
@@ -94,125 +163,54 @@ export function stream({ resource, options, onIdFound }) {
         onIdFound(id ?? '')
       },
       onmessage({ id, event, data }) {
-        sendMessage({ id, event, data })
+        for (const onMessage of configuration.onMessage) {
+          onMessage({
+            id,
+            event,
+            data,
+            connect,
+            controller,
+            local: false,
+          })
+        }
+        cache.delete(key)
       },
       onclose() {
         readyState = CLOSED
-        sendClose({})
+        for (const onClose of configuration.onClose) {
+          onClose({
+            id: '',
+            event: 'close',
+            data: '',
+            connect,
+            controller,
+            local: false,
+          })
+        }
+        cache.delete(key)
       },
       onerror(error) {
         readyState = CLOSED
-        sendError(error)
+        for (const onError of configuration.onError) {
+          onError({
+            id: '',
+            event: 'error',
+            data: '',
+            error,
+            connect,
+            controller,
+            local: false,
+          })
+        }
       },
       signal: controller.signal,
     })
     readyState = OPEN
   }
 
-  /**
-   *
-   * @param {import('./types').ClosePayload} payload
-   */
-  function close({ reason }) {
-    controller.abort(reason)
-    readyState = CLOSED
-    sendClose({})
-  }
+  connect().then(function connected() {
+    connecting.delete(key)
+  })
 
-  /**
-   *
-   * @param {SendErrorPayload} payload
-   */
-  function sendError({ error }) {
-    const currentListeners = events.get('error') ?? []
-    for (const listener of currentListeners) {
-      listener({ id: '', event: '', data: '', error, connect, close })
-    }
-  }
-
-  /**
-   *
-   * @param {SendClosePayload} reason
-   */
-  function sendClose({ error }) {
-    const currentListeners = events.get('close') ?? []
-    for (const listener of currentListeners) {
-      listener({ id: '', event: '', data: '', error, connect, close })
-    }
-  }
-
-  /**
-   * @typedef SendMessagePayload
-   * @property {string} id
-   * @property {string} event
-   * @property {string} data
-   * @property {Error} [error]
-   */
-
-  /**
-   *
-   * @param {SendMessagePayload} payload
-   */
-  function sendMessage({ id, event, data }) {
-    const decoded = decodeURIComponent(data)
-    const currentListeners = events.get(event) ?? []
-    for (const listener of currentListeners) {
-      listener({
-        id,
-        event,
-        data: decoded,
-        connect,
-        close,
-      })
-    }
-  }
-
-  connect()
-
-  return {
-    /**
-     * @returns {string}
-     */
-    get url() {
-      return `${resource}`
-    },
-    /**
-     * @returns {StreamState}
-     */
-    get readyState() {
-      return readyState
-    },
-    /**
-     *
-     * @param {string} name
-     * @param {import('./types').EventListener} listener
-     */
-    addEventListener(name, listener) {
-      if (!events.has(name)) {
-        events.set(name, [])
-      }
-
-      const listeners = events.get(name) ?? []
-      listeners.push(listener)
-    },
-    /**
-     *
-     * @param {string} name
-     * @param {import('./types').EventListener} listener
-     * @returns
-     */
-    removeEventListener(name, listener) {
-      if (!events.has(name)) {
-        return
-      }
-      const listeners = events.get(name) ?? []
-      const listenersReplacement = listeners.filter(
-        function pass(listenerLocal) {
-          return listenerLocal !== listener
-        },
-      )
-      events.set(name, listenersReplacement)
-    },
-    close,
-  }
+  return result
 }

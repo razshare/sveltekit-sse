@@ -177,7 +177,7 @@ You can apply custom headers to the connection
 
 While on the client, you can transform the stream into any type of object you want by using `source::select::transform`.
 
-The `transform` method receives a `ReadableStream`, which you can use to read incoming messages from the source.
+The `transform` method receives a `string`, which is the value of the store.
 
 Here's an example how to use it.
 
@@ -188,38 +188,8 @@ Here's an example how to use it.
   const connection = source('/custom-event')
   const channel = connection.select('message')
 
-  const transformed = channel.transform(function start(stream) {
-    let state = {
-      /** @type {Array<function(string):void>}*/
-      listeners: [],
-    }
-    const reader = stream.getReader()
-    const store = {
-      subscribe(callback) {
-        if (!state.listeners.includes(callback)) {
-          state.listeners.push(callback)
-        }
-
-        return function stop() {
-          state.listeners = state.listeners.filter(function pass(value) {
-            return value !== callback
-          })
-        }
-      },
-    }
-
-    const listen = async function () {
-      let value = ''
-      while (({ value } = await reader.read())) {
-        state.listeners.forEach(function run(callback) {
-          callback(value)
-        })
-      }
-    }
-
-    listen()
-
-    return store
+  const transformed = channel.transform(function run(data) {
+    return `transformed: ${data}`
   })
 
   $: console.log({ $transformed })
@@ -262,7 +232,7 @@ export function POST({ request }) {
       emit('message', 'hello world')
       setTimeout(function unlock(){
         lock.set(false)
-      },2000)
+      }, 2000)
     },
   })
 }
