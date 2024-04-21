@@ -57,32 +57,44 @@ export const CLOSED = 2
  */
 
 /**
- * @typedef {ReturnType<stream>} EventSource
- */
-
-/**
  * @type {Map<string, number>}
  */
 const connecting = new Map()
 
 /**
+ * @typedef StreamConfiguration
+ * @property {Array<import('./types').EventListener>} onError
+ * @property {Array<import('./types').EventListener>} onClose
+ * @property {Array<import('./types').EventListener>} onMessage
+ */
+
+/**
+ * @typedef StreamConnection
+ * @property {AbortController} controller
+ * @property {string} resource
+ * @property {StreamState} readyState
+ */
+
+/**
  *
  * @param {StreamPayload} payload
- * @returns
+ * @returns {StreamConnection}
  */
 export function stream({
   resource,
+  beacon,
   options,
   onIdFound,
   onMessage,
   onError,
   onClose,
 }) {
-  const key = btoa(JSON.stringify({ resource, options }))
+  const key = btoa(JSON.stringify({ resource, options, beacon }))
 
   /** @type {StreamState} */
   let readyState = CONNECTING
 
+  /** @type {StreamConfiguration} */
   const configuration = {
     onClose: [onClose],
     onError: [onError],

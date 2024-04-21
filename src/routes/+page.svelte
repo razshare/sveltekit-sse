@@ -10,5 +10,4 @@
 </form>
 
 <h3>An International Cat Quote</h3>
-
 <span>{$quote?.value}</span><br />

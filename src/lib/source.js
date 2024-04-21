@@ -27,6 +27,7 @@ import { IS_BROWSER } from './constants'
 /**
  * @typedef ConnectPayload
  * @property {string} resource Path to the stream.
+ * @property {boolean} cache Cache connections.
  * @property {number} beacon How often to send a beacon to the server in `milliseconds`.\
  * Defaults to `5000 milliseconds`.
  *
@@ -40,17 +41,43 @@ import { IS_BROWSER } from './constants'
  */
 
 /**
- * @param {ConnectPayload} payload
- * @returns
+ * @typedef {import('svelte/store').Readable<false | { id: string, event: string, data: string }> & {close:function():void}} Connectable
  */
-function connectable({ resource, beacon, options, onClose, onError }) {
+
+/**
+ * @typedef {false | { id: string, event: string, data: string }} ConnectablePayload
+ */
+
+/**
+ * @type {Map<string, Connectable>}
+ */
+const cachedConnectables = new Map()
+
+/**
+ * @param {ConnectPayload} payload
+ * @returns {Connectable}
+ */
+function connectable({ resource, cache, beacon, options, onClose, onError }) {
+  const key = btoa(JSON.stringify({ resource, options, beacon }))
+
+  if (cache) {
+    const cachedConnectable = cachedConnectables.get(key)
+    if (cachedConnectable) {
+      return cachedConnectable
+    }
+  }
+
   let close = function noop() {}
 
   const store = readable(
-    /** @type {false | { id: string, event: string, data: string }} */ (false),
+    false,
+    /**
+     * @param {function(ConnectablePayload):void} set
+     * @returns
+     */
     function start(set) {
       /**
-       * @type {undefined | NodeJS.Timeout}
+       * @type {undefined | Timer}
        */
       let interval = undefined
 
@@ -86,7 +113,16 @@ function connectable({ resource, beacon, options, onClose, onError }) {
     },
   )
 
-  return { ...store, close }
+  /**
+   * @type {Connectable}
+   */
+  const connectable = { ...store, close }
+
+  if (cache) {
+    cachedConnectables.set(key, connectable)
+  }
+
+  return connectable
 }
 
 /**
@@ -105,6 +141,11 @@ function connectable({ resource, beacon, options, onClose, onError }) {
  * @property {import('./types').EventListener} [close] Do something whenever the connection closes.
  * @property {import('./types').EventListener} [error] Do something whenever there are errors.
  * @property {Options} [options] Options for the underlying http request.
+ * @property {boolean} [cache] Wether or not to cache connections, defaults to `false`.\
+ * > **Note**\
+ * > Connections are cached based on `from`, `beacon` and `options`.\
+ * > If two sources define all three properties with the same values, then both sources will share the same connection,
+ * > otherwise they will create and use two separate connections.
  * @property {number} [beacon]
  */
 
@@ -130,7 +171,7 @@ function connectable({ resource, beacon, options, onClose, onError }) {
  */
 export function source(
   from,
-  { error, close, beacon = 5000, options = {} } = {},
+  { error, close, cache = false, beacon = 5000, options = {} } = {},
 ) {
   if (!IS_BROWSER) {
     return {
@@ -167,8 +208,11 @@ export function source(
     }
   }
 
+  console.log({ cache })
+
   const connected = connectable({
     resource: from,
+    cache,
     beacon,
     options,
     onClose(e) {
