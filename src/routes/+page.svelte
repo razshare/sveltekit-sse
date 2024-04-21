@@ -1,7 +1,8 @@
 <script>
   import { enhance } from '$app/forms'
   export let data
-  const quote = data?.quote
+
+  $: quote = data?.quote
 </script>
 
 <form use:enhance method="post">

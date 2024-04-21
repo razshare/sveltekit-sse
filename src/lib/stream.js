@@ -61,20 +61,6 @@ export const CLOSED = 2
  */
 
 /**
- * @type {Map<string, {
- *  onMessage: Array<import('./types').EventListener>,
- *  onError: Array<import('./types').EventListener>,
- *  onClose: Array<import('./types').EventListener>,
- * }>}
- */
-const cache = new Map()
-
-/**
- * @type {Map<string, AbortController>}
- */
-const controllers = new Map()
-
-/**
  * @type {Map<string, number>}
  */
 const connecting = new Map()
@@ -103,48 +89,14 @@ export function stream({
     onMessage: [onMessage],
   }
 
+  const controller = new AbortController()
+
+  controller.signal.addEventListener('abort', function closed() {
+    readyState = CLOSED
+  })
+
   const result = {
-    flush() {
-      if (!cache.has(key)) {
-        this.controller.abort()
-      }
-    },
     get controller() {
-      let fresh = true
-      /**
-       * @type {AbortController}
-       */
-      let controller
-      if (controllers.has(key)) {
-        const controllerLocal = controllers.get(key)
-        if (controllerLocal) {
-          controller = controllerLocal
-          fresh = false
-        } else {
-          controller = new AbortController()
-          controllers.set(key, controller)
-        }
-      } else {
-        controller = new AbortController()
-        controllers.set(key, controller)
-      }
-
-      if (fresh) {
-        controller.signal.addEventListener('abort', function closed() {
-          readyState = CLOSED
-          for (const onClose of configuration.onClose) {
-            onClose({
-              id: '',
-              event: 'close',
-              data: '',
-              connect,
-              controller: controller,
-            })
-          }
-          cache.delete(key)
-        })
-      }
-
       return controller
     },
     /**
@@ -160,16 +112,6 @@ export function stream({
       return readyState
     },
   }
-
-  if (cache.has(key)) {
-    const configuration = cache.get(key)
-    configuration?.onMessage.push(onMessage)
-    configuration?.onError.push(onError)
-    configuration?.onClose.push(onClose)
-    return result
-  }
-
-  cache.set(key, configuration)
 
   const openWhenHidden = true
   const rest = options ? { ...options } : {}
@@ -209,7 +151,6 @@ export function stream({
             controller: result.controller,
           })
         }
-        cache.delete(key)
       },
       onclose() {
         readyState = CLOSED
@@ -222,7 +163,6 @@ export function stream({
             controller: result.controller,
           })
         }
-        cache.delete(key)
       },
       onerror(error) {
         readyState = CLOSED

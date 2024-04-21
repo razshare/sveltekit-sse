@@ -1,4 +1,4 @@
-import { derived, readable, writable } from 'svelte/store'
+import { derived, readable } from 'svelte/store'
 import { stream } from './stream'
 import { IS_BROWSER } from './constants'
 /**
@@ -35,51 +35,58 @@ import { IS_BROWSER } from './constants'
  * > Remember that if you disable this behavior but the server sent event still declares
  * > a `timeout`, the stream will close without notice after the `timeout` expires on the server.
  * @property {Options} options Options for the underlying http request.
- * @property {import('./types').EventListener} onMessage
  * @property {import('./types').EventListener} onError
  * @property {import('./types').EventListener} onClose
  */
 
 /**
- *
  * @param {ConnectPayload} payload
  * @returns
  */
-function connect({ resource, beacon, options, onClose, onError, onMessage }) {
-  /**
-   * @type {false|NodeJS.Timeout}
-   */
-  let interval = false
-  const eventSource = stream({
-    resource,
-    beacon,
-    options,
-    onIdFound(id) {
-      if (beacon <= 0) {
-        return
+function connectable({ resource, beacon, options, onClose, onError }) {
+  let close = function noop() {}
+
+  const store = readable(
+    /** @type {false | { id: string, event: string, data: string }} */ (false),
+    function start(set) {
+      /**
+       * @type {undefined | NodeJS.Timeout}
+       */
+      let interval = undefined
+
+      const eventSource = stream({
+        resource,
+        beacon,
+        options,
+        onIdFound(id) {
+          if (beacon <= 0) {
+            return
+          }
+          const path = resource.toString().split('?', 2)[0] ?? '/'
+          clearInterval(interval)
+          interval = setInterval(function run() {
+            navigator.sendBeacon(`${path}?x-sse-id=${id}`)
+          }, beacon)
+        },
+        onClose,
+        onError,
+        onMessage(e) {
+          set({ id: e.id, event: e.event, data: decodeURIComponent(e.data) })
+        },
+      })
+
+      function stopBeacon() {
+        eventSource.controller.abort()
+        clearInterval(interval)
       }
-      const path = resource.toString().split('?', 2)[0] ?? '/'
-      interval = setInterval(function run() {
-        navigator.sendBeacon(`${path}?x-sse-id=${id}`)
-      }, beacon)
+
+      close = stopBeacon
+
+      return stopBeacon
     },
-    onClose,
-    onError,
-    onMessage,
-  })
+  )
 
-  const stopBeacon = function stopBeacon() {
-    if (interval) {
-      clearInterval(interval)
-    }
-  }
-
-  return {
-    resource,
-    eventSource,
-    connectionsCounter: 0,
-    stopBeacon,
-  }
+  return { ...store, close }
 }
 
 /**
@@ -160,15 +167,7 @@ export function source(
     }
   }
 
-  /**
-   * @type {import('svelte/store').Writable<false|{id:string,event:string,data:string}>}
-   */
-  const store = writable(false)
-
-  /**
-   * @type {Connected}
-   */
-  const connected = connect({
+  const connected = connectable({
     resource: from,
     beacon,
     options,
@@ -182,14 +181,11 @@ export function source(
         error(e)
       }
     },
-    onMessage(e) {
-      store.set({ id: e.id, event: e.event, data: decodeURIComponent(e.data) })
-    },
   })
 
   return {
     close() {
-      connected.eventSource.controller.abort()
+      connected.close()
     },
     /**
      *  Select an event from the stream.
@@ -209,16 +205,9 @@ export function source(
         )
       }
 
-      const storeLocal = readable('', function start(set) {
-        const unsubscribe = store.subscribe(function pass(value) {
-          if (value && value.event === eventName) {
-            set(value.data)
-          }
-        })
-
-        return function stop() {
-          connected.eventSource.flush()
-          unsubscribe()
+      const storeLocal = derived(connected, function pass(value, set) {
+        if (value && value.event === eventName) {
+          set(value.data)
         }
       })
 
