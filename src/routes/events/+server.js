@@ -84,7 +84,6 @@ async function dumpData(lang, { emit, lock }) {
 
 export function POST({ request, url }) {
   return events({
-    timeout: 10000,
     request,
     start(connection) {
       const lang = url.searchParams.get('lang') || 'en'

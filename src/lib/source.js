@@ -102,14 +102,14 @@ function connectable({ resource, cache, beacon, options, onClose, onError }) {
         },
       })
 
-      function stopBeacon() {
+      function terminate() {
         eventSource.controller.abort()
         clearInterval(interval)
       }
 
-      close = stopBeacon
+      close = terminate
 
-      return stopBeacon
+      return terminate
     },
   )
 
@@ -171,7 +171,7 @@ function connectable({ resource, cache, beacon, options, onClose, onError }) {
  */
 export function source(
   from,
-  { error, close, cache = false, beacon = 5000, options = {} } = {},
+  { error, close, cache = true, beacon = 5000, options = {} } = {},
 ) {
   if (!IS_BROWSER) {
     return {
@@ -207,8 +207,6 @@ export function source(
       },
     }
   }
-
-  console.log({ cache })
 
   const connected = connectable({
     resource: from,
@@ -249,9 +247,16 @@ export function source(
         )
       }
 
-      const storeLocal = derived(connected, function pass(value, set) {
-        if (value && value.event === eventName) {
-          set(value.data)
+      const storeLocal = readable('', function start(set) {
+        const unsubscribe = connected.subscribe(function watch(value) {
+          if (value && value.event === eventName) {
+            set(value.data)
+          }
+        })
+
+        return function stop() {
+          connected.close()
+          unsubscribe()
         }
       })
 

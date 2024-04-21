@@ -7,7 +7,7 @@ export function load({ url }) {
    * @type {import('svelte/store').Readable<null|import('./events/+server.js').Quote>}
    */
   const quote = source(`/events?${searchParams}`, {
-    beacon: 6000,
+    cache: false,
     close({ connect }) {
       console.log('reconnecting...')
       connect()
