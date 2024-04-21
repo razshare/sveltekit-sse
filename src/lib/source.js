@@ -141,7 +141,7 @@ function connectable({ resource, cache, beacon, options, onClose, onError }) {
  * @property {import('./types').EventListener} [close] Do something whenever the connection closes.
  * @property {import('./types').EventListener} [error] Do something whenever there are errors.
  * @property {Options} [options] Options for the underlying http request.
- * @property {boolean} [cache] Wether or not to cache connections, defaults to `false`.\
+ * @property {boolean} [cache] Wether or not to cache connections, defaults to `true`.
  * > **Note**\
  * > Connections are cached based on `from`, `beacon` and `options`.\
  * > If two sources define all three properties with the same values, then both sources will share the same connection,
