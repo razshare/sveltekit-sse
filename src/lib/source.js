@@ -92,6 +92,10 @@ function connectable({ resource, cache, beacon, options, onClose, onError }) {
           const path = resource.toString().split('?', 2)[0] ?? '/'
           clearInterval(interval)
           interval = setInterval(function run() {
+            // Since Beacons don't allow for headers to be set, your instinct
+            // will probably tell you to send the `id` as a body.
+            // Don't do that, because that would mean complicating the server side `events()`
+            // function by making it async.
             navigator.sendBeacon(`${path}?x-sse-id=${id}`)
           }, beacon)
         },

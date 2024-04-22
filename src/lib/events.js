@@ -67,7 +67,7 @@ function createEmitter({ controller, context }) {
 }
 
 /**
- * @type {Map<string,NodeJS.Timeout>}
+ * @type {Map<string,Timer>}
  */
 const timeouts = new Map()
 /**
@@ -256,9 +256,6 @@ export function events({ start, cancel, request, headers, timeout = 7000 }) {
       id = params.get('x-sse-id') ?? ''
     }
   }
-
-  // const parts = request.url.split('?')
-  // let id = 2 === parts.length ? parts[1] ?? '' : ''
 
   if (id) {
     const timeoutOld = timeouts.get(id)
