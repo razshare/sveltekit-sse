@@ -51,7 +51,8 @@ and consume the source on your client with:
 
 
 > [!CAUTION]
-> Due to how the [beacon api](#beacon) works, you must write all your logic within the `start()` function while on the server.
+> Due to how the [beacon api](#beacon) works, you must write all your logic within the `start()` function while on the server.\
+> You can read more on this [here](https://github.com/tncrazvan/sveltekit-sse/issues/36#issuecomment-2069421739).
 
 
 In other words, this is wrong
@@ -266,10 +267,7 @@ The algorithm is simple in theory, but it requires both server and client to coo
 2. **Server:** _Open a stream to the client._
 3. **Server:** _Schedule a stream destructor in `T` milliseconds._
 4. **Client:** _Send a beacon to the server to verify you're alive._
-> [!NOTE]
-> There's actually a sort of [session being managed](https://github.com/tncrazvan/sveltekit-sse/blob/fbea4c7b75917f3c35a1e39d021f47908d416595/src/lib/events.js#L278-L283) in this step in order to identify each client.
-
-5. **Server:** _Reset the stream destructor [if the beacon is valid](https://github.com/tncrazvan/sveltekit-sse/blob/fbea4c7b75917f3c35a1e39d021f47908d416595/src/lib/events.js#L284-L292)._
+5. **Server:** _Reset the stream destructor [if the beacon is valid](https://github.com/tncrazvan/sveltekit-sse/blob/8f1fba1f80be0a7df0e75d0060be2f91713cbd27/src/lib/events.js#L261-L270)._
 6. Repeat from _step 3_.
 
 The key part here is obviously `T`, which lives on both the client and the server.\
