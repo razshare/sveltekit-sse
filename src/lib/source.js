@@ -35,7 +35,7 @@ import { IS_BROWSER } from './constants'
  * > You can set `beacon` to `0` or a negative value to disable this behavior.\
  * > Remember that if you disable this behavior but the server sent event still declares
  * > a `timeout`, the stream will close without notice after the `timeout` expires on the server.
- * @property {Options} options Options for the underlying http request.
+ * @property {import('./types').Options} options Options for the underlying http request.
  * @property {import('./types').EventListener} onError
  * @property {import('./types').EventListener} onClose
  */
@@ -130,11 +130,6 @@ function connectable({ resource, cache, beacon, options, onClose, onError }) {
 }
 
 /**
- * Options for the underlying http request.
- * @typedef {Pick<import('@microsoft/fetch-event-source').FetchEventSourceInit, "body"|"cache"|"credentials"|"fetch"|"headers"|"integrity"|"keepalive"|"method"|"mode"|"openWhenHidden"|"redirect"|"referrer"|"referrerPolicy"|"timeout"|"window">} Options
- */
-
-/**
  * Consume a server sent event as a readable store.
  *
  * > **Note**\
@@ -144,7 +139,7 @@ function connectable({ resource, cache, beacon, options, onClose, onError }) {
  * @typedef SourceConfiguration
  * @property {import('./types').EventListener} [close] Do something whenever the connection closes.
  * @property {import('./types').EventListener} [error] Do something whenever there are errors.
- * @property {Options} [options] Options for the underlying http request.
+ * @property {import('./types').Options} [options] Options for the underlying http request.
  * @property {boolean} [cache] Wether or not to cache connections, defaults to `true`.
  * > **Note**\
  * > Connections are cached based on `from`, `beacon` and `options`.\

@@ -87,3 +87,8 @@ export {}
  * @param {JsonPredicatePayload<T>} payload
  * @returns {null|T}
  */
+
+/**
+ * Options for the underlying http request.
+ * @typedef {Pick<import('@microsoft/fetch-event-source').FetchEventSourceInit, "body"|"cache"|"credentials"|"fetch"|"headers"|"integrity"|"keepalive"|"method"|"mode"|"openWhenHidden"|"redirect"|"referrer"|"referrerPolicy"|"window">} Options
+ */

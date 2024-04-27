@@ -15,11 +15,6 @@ export const OPEN = 1
 export const CLOSED = 2
 
 /**
- * Options for the underlying http request.
- * @typedef {Pick<import('@microsoft/fetch-event-source').FetchEventSourceInit, "body"|"cache"|"credentials"|"fetch"|"headers"|"integrity"|"keepalive"|"method"|"mode"|"openWhenHidden"|"redirect"|"referrer"|"referrerPolicy"|"window">} Options
- */
-
-/**
  * @callback IdFound
  * @param {string} id
  */
@@ -27,7 +22,7 @@ export const CLOSED = 2
 /**
  * @typedef StreamPayload
  * @property {string} resource
- * @property {Options} options
+ * @property {import('./types').Options} options
  * @property {number} beacon
  * @property {IdFound} onIdFound
  * @property {import('./types').EventListener} onMessage
