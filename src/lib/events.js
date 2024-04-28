@@ -1,7 +1,7 @@
 import { writable } from 'svelte/store'
 import { ok } from './ok'
 import { error } from './error'
-import { beacon } from './beacon'
+import { findBeacon } from './findBeacon'
 import { uuid } from './uuid'
 
 /**
@@ -101,7 +101,7 @@ function createTimeout({ context, lock, timeout }) {
 /**
  * @typedef CreateStreamPayload
  * @property {Start} start
- * @property {string} id
+ * @property {string} xSseId
  * @property {import('svelte/store').Writable<boolean>} lock
  * @property {StreamContext} context
  * @property {number} timeout
@@ -113,7 +113,7 @@ function createTimeout({ context, lock, timeout }) {
  * @param {CreateStreamPayload} payload
  * @returns
  */
-function createStream({ start, id, lock, context, cancel, timeout }) {
+function createStream({ start, xSseId: id, lock, context, cancel, timeout }) {
   return new ReadableStream({
     async start(controller) {
       // eslint-disable-next-line @typescript-eslint/no-this-alias
@@ -237,16 +237,17 @@ function createContext() {
 
 /**
  * @typedef ExtendPayload
- * @property {string} xSseId Stream identifier.
+ * @property {import('./types').Beacon} beacon Stream identifier.
  * @property {number} [timeout] The new timeout.
  */
 
 /**
- * Extend the lifetime of a server sent events stream.
+ * Extend the lifetime of a server sent events stream using a beacon.
  * @param {ExtendPayload} payload
  * @returns {Response}
  */
-export function extend({ xSseId, timeout = 7000 }) {
+export function extend({ beacon, timeout = 7000 }) {
+  const { xSseId } = beacon
   const timeoutOld = timeouts.get(xSseId)
   if (timeoutOld) {
     clearTimeout(timeoutOld)
@@ -268,32 +269,34 @@ export function extend({ xSseId, timeout = 7000 }) {
 export function events({ start, cancel, request, headers, timeout = 7000 }) {
   const context = createContext()
 
-  let id = beacon({ request })
+  let xSseId = ''
+  const beacon = findBeacon({ request })
 
-  if (id) {
-    const timeoutOld = timeouts.get(id)
+  if (beacon) {
+    xSseId = beacon.xSseId
+    const timeoutOld = timeouts.get(xSseId)
     if (timeoutOld) {
       clearTimeout(timeoutOld)
-      const lock = locks.get(id)
+      const lock = locks.get(xSseId)
       if (timeout <= 0 || !lock) {
         return new Response()
       }
-      timeouts.set(id, createTimeout({ timeout, context, lock }))
-      locks.set(id, lock)
+      timeouts.set(xSseId, createTimeout({ timeout, context, lock }))
+      locks.set(xSseId, lock)
     }
     return new Response()
   }
 
   do {
-    id = uuid({ short: false })
-  } while (timeouts.has(id))
+    xSseId = uuid({ short: false })
+  } while (timeouts.has(xSseId))
 
   const lock = writable(true)
-  locks.set(id, lock)
+  locks.set(xSseId, lock)
   const stream = createStream({
     start,
     timeout,
-    id,
+    xSseId: xSseId,
     lock,
     cancel,
     context,
@@ -306,7 +309,7 @@ export function events({ start, cancel, request, headers, timeout = 7000 }) {
       'Content-Type': 'text/event-stream',
       'Connection': 'keep-alive',
       ...headers,
-      'x-sse-id': id,
+      'x-sse-id': xSseId,
     },
   })
 }
