@@ -7,15 +7,6 @@ import { IS_BROWSER } from './constants'
  */
 
 /**
- * State of the stream.\
- * It can be
- * - `CONNECTING` = `0`
- * - `OPEN` = `1`
- * - `CLOSED` = `2`
- * @typedef {0|1|2} StreamState
- */
-
-/**
  * Connection established.
  * @typedef Connected
  * @property {string} resource Path to the stream.

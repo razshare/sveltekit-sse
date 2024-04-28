@@ -2,19 +2,6 @@ import { fetchEventSource } from '@microsoft/fetch-event-source'
 import { IS_BROWSER } from './constants'
 
 /**
- * @type {StreamState}
- */
-export const CONNECTING = 0
-/**
- * @type {StreamState}
- */
-export const OPEN = 1
-/**
- * @type {StreamState}
- */
-export const CLOSED = 2
-
-/**
  * @callback IdFound
  * @param {string} id
  */
@@ -28,15 +15,6 @@ export const CLOSED = 2
  * @property {import('./types').EventListener} onMessage
  * @property {import('./types').EventListener} onError
  * @property {import('./types').EventListener} onClose
- */
-
-/**
- * State of the stream.\
- * It can be
- * - `CONNECTING` = `0`
- * - `OPEN` = `1`
- * - `CLOSED` = `2`
- * @typedef {0|1|2} StreamState
  */
 
 /**
@@ -67,7 +45,6 @@ const connecting = new Map()
  * @typedef StreamConnection
  * @property {AbortController} controller
  * @property {string} resource
- * @property {StreamState} readyState
  */
 
 /**
@@ -86,9 +63,6 @@ export function stream({
 }) {
   const key = btoa(JSON.stringify({ resource, options, beacon }))
 
-  /** @type {StreamState} */
-  let readyState = CONNECTING
-
   /** @type {StreamConfiguration} */
   const configuration = {
     onClose: [onClose],
@@ -97,10 +71,6 @@ export function stream({
   }
 
   const controller = new AbortController()
-
-  controller.signal.addEventListener('abort', function closed() {
-    readyState = CLOSED
-  })
 
   const result = {
     get controller() {
@@ -111,12 +81,6 @@ export function stream({
      */
     get resource() {
       return resource
-    },
-    /**
-     * @returns {StreamState}
-     */
-    get readyState() {
-      return readyState
     },
   }
 
@@ -160,7 +124,6 @@ export function stream({
         }
       },
       onclose() {
-        readyState = CLOSED
         for (const onClose of configuration.onClose) {
           onClose({
             id: '',
@@ -172,7 +135,6 @@ export function stream({
         }
       },
       onerror(error) {
-        readyState = CLOSED
         for (const onError of configuration.onError) {
           onError({
             id: '',
@@ -186,7 +148,6 @@ export function stream({
       },
       signal: result.controller.signal,
     })
-    readyState = OPEN
   }
 
   connect().then(function connected() {
