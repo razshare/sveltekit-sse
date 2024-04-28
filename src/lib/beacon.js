@@ -4,10 +4,12 @@
  */
 
 /**
- * Check if a request is a sveltekit-sse beacon request.
+ * Try to resolve the request into an sse stream beacon.\
+ * If the request is indeed a beacon, get the stream's identifier.
  * @param {BeaconPayload} payload
- * @returns {false|string} The beacon's _x-sse-id_ if the request is a beacon, `false` otherwise.\
- * Empty _x-sse-id_ values are treated as invalid, thus this function will always return `false` when an empty _x-sse-id_ is detected.
+ * @returns {false|string} The stream's identifier if the request is a beacon, `false` otherwise.\
+ * The stream identifier is obtained from the request's `x-sse-id` query.\
+ * Empty identifiers are not valid, thus this function will always return `false` when an empty identifiers is detected.
  */
 export function beacon({ request }) {
   const search = request.url.split('?')[1] ?? ''

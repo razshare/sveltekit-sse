@@ -1,5 +1,5 @@
 import { beacon } from '$lib/beacon.js'
-import { events } from '$lib/events.js'
+import { events, extend } from '$lib/events.js'
 
 /**
  * @typedef Quote
@@ -84,9 +84,10 @@ async function dumpData(lang, { emit, lock }) {
 }
 
 export function POST({ request, url }) {
-  const id = beacon({ request })
-  if (id) {
-    return new Response()
+  const xSseId = beacon({ request })
+  if (xSseId) {
+    console.log('Stream extended.')
+    return extend({ xSseId })
   }
 
   return events({

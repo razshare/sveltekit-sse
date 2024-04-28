@@ -174,9 +174,9 @@ export function stream({
               xSseId,
             })
           }
+        } else {
+          controller.abort()
         }
-
-        controller.abort()
       },
       onmessage({ id, event, data }) {
         for (const onMessage of configuration.onMessage) {

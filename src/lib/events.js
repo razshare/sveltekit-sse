@@ -228,6 +228,35 @@ function createStream({ start, id, lock, context, cancel, timeout }) {
  */
 
 /**
+ * @typedef ExtendPayload
+ * @property {string} xSseId Stream identifier.
+ * @property {number} [timeout] The new timeout.
+ */
+
+/**
+ * Extend the lifetime of a server sent events stream.
+ * @param {ExtendPayload} payload
+ * @returns {Response}
+ */
+export function extend({ xSseId, timeout = 7000 }) {
+  const timeoutOld = timeouts.get(xSseId)
+  if (timeoutOld) {
+    clearTimeout(timeoutOld)
+    const lock = locks.get(xSseId)
+    if (timeout <= 0 || !lock) {
+      return new Response()
+    }
+    /**
+     * @type {StreamContext}
+     */
+    const context = { connected: true }
+    timeouts.set(xSseId, createTimeout({ timeout, context, lock }))
+    locks.set(xSseId, lock)
+  }
+  return new Response()
+}
+
+/**
  * Create one stream and emit multiple server sent events.
  * @param {EventsPayload} payload
  */
