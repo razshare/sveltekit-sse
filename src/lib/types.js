@@ -50,7 +50,7 @@ export {}
  *   }
  * })
  * ```
- * @property {AbortController} controller An abort controller, you can use it to close the stream.
+ * @property {function():void} close Close the stream.
  */
 
 /**

@@ -15,7 +15,7 @@ import { uuid } from './uuid'
  * @property {string} resource
  * @property {import('./types').Options} options
  * @property {number} beacon
- * @property {IdFound} onIdFound
+ * @property {IdFound} startBeacon
  * @property {import('./types').EventListener} onMessage
  * @property {import('./types').EventListener} onError
  * @property {import('./types').EventListener} onClose
@@ -62,7 +62,7 @@ export function stream({
   resource,
   beacon,
   options,
-  onIdFound,
+  startBeacon,
   onMessage,
   onError,
   onClose,
@@ -84,31 +84,58 @@ export function stream({
   let headers = new Headers()
   /** @type {false|string} */
   let xSseId = false
+  let localAbort = false
+  /** @type {false|function():void} */
+  let stopBeacon = false
 
+  /**
+   * Userland should never have direct access to this controller.\
+   * It should only be used when we want to hint that the abort signal is in some
+   * way issued by the server, for example if the server returns a status code >= 300.
+   */
   const controller = new AbortController()
 
+  /**
+   * Userland should never have direct access to this controller.\
+   * Indirection for the actual `controller`.
+   */
+  const controllerLocal = new AbortController()
+
+  function close() {
+    controllerLocal.abort()
+  }
+
   controller.signal.addEventListener('abort', function abort() {
+    if (stopBeacon) {
+      stopBeacon()
+    }
     const id = uuid({ short: true })
-    const headers = new Headers()
+    const isLocal = localAbort
+    localAbort = false
     for (const onClose of configuration.onClose) {
       onClose({
         id,
         event: 'close',
         data: '',
         connect,
-        controller: result.controller,
-        isLocal: false,
+        isLocal,
         status,
         statusText,
         headers,
         xSseId,
+        close,
       })
     }
   })
 
+  controllerLocal.signal.addEventListener('abort', function abortLocal() {
+    localAbort = true
+    controller.abort()
+  })
+
   const result = {
     get controller() {
-      return controller
+      return controllerLocal
     },
     /**
      * @returns {string}
@@ -136,6 +163,9 @@ export function stream({
     statusText = 'Internal Server Error'
     headers = new Headers()
 
+    // Reset beacon stopper
+    stopBeacon = false
+
     await fetchEventSource(`${resource}`, {
       openWhenHidden,
       ...rest,
@@ -155,8 +185,8 @@ export function stream({
           const xSseIdLocal = headers.get('x-sse-id')
           if (xSseIdLocal) {
             xSseId = xSseIdLocal
-            if (onIdFound) {
-              onIdFound(xSseId ?? '')
+            if (startBeacon) {
+              stopBeacon = startBeacon(xSseId ?? '')
             }
           }
 
@@ -166,15 +196,17 @@ export function stream({
               event: 'open',
               data: '',
               connect,
-              controller: result.controller,
               isLocal: false,
               status,
               statusText,
               headers,
               xSseId,
+              close,
             })
           }
         } else {
+          // This type of disconnection should be treated as if issued by the server, not the client.
+          localAbort = false
           controller.abort()
         }
       },
@@ -185,28 +217,31 @@ export function stream({
             event,
             data,
             connect,
-            controller: result.controller,
             isLocal: false,
             status,
             statusText,
             headers,
             xSseId,
+            close,
           })
         }
       },
       onclose() {
+        if (stopBeacon) {
+          stopBeacon()
+        }
         for (const onClose of configuration.onClose) {
           onClose({
             id: '',
             event: 'close',
             data: '',
             connect,
-            controller: result.controller,
             isLocal: false,
             status,
             statusText,
             headers,
             xSseId,
+            close,
           })
         }
       },
@@ -218,16 +253,16 @@ export function stream({
             data: '',
             error,
             connect,
-            controller: result.controller,
             isLocal: false,
             status,
             statusText,
             headers,
             xSseId,
+            close,
           })
         }
       },
-      signal: result.controller.signal,
+      signal: controller.signal,
     })
   }
 

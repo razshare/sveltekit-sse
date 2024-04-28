@@ -228,6 +228,14 @@ function createStream({ start, id, lock, context, cancel, timeout }) {
  */
 
 /**
+ *
+ * @returns {StreamContext}
+ */
+function createContext() {
+  return { connected: true }
+}
+
+/**
  * @typedef ExtendPayload
  * @property {string} xSseId Stream identifier.
  * @property {number} [timeout] The new timeout.
@@ -246,10 +254,7 @@ export function extend({ xSseId, timeout = 7000 }) {
     if (timeout <= 0 || !lock) {
       return new Response()
     }
-    /**
-     * @type {StreamContext}
-     */
-    const context = { connected: true }
+    const context = createContext()
     timeouts.set(xSseId, createTimeout({ timeout, context, lock }))
     locks.set(xSseId, lock)
   }
@@ -261,10 +266,7 @@ export function extend({ xSseId, timeout = 7000 }) {
  * @param {EventsPayload} payload
  */
 export function events({ start, cancel, request, headers, timeout = 7000 }) {
-  /**
-   * @type {StreamContext}
-   */
-  const context = { connected: true }
+  const context = createContext()
 
   let id = beacon({ request })
 

@@ -33,11 +33,25 @@ import { IS_BROWSER } from './constants'
  */
 
 /**
- * @typedef {import('svelte/store').Readable<false | { id: string, event: string, data: string }> & {close:function():void}} Connectable
+ * @typedef {import('svelte/store').Readable<ConnectablePayload> & ConnectableAugmentations} Connectable
  */
 
 /**
- * @typedef {false | { id: string, event: string, data: string }} ConnectablePayload
+ * A message from the currently connected source.
+ * @typedef ConnectableMessage
+ * @property {string} id Message identifier.
+ * @property {string} event Event name.
+ * @property {string} data Event data.
+ */
+
+/**
+ * Connectable features.
+ * @typedef ConnectableAugmentations
+ * @property {function():void} close Close the current connection.
+ */
+
+/**
+ * @typedef {false | ConnectableMessage} ConnectablePayload
  */
 
 /**
@@ -67,7 +81,7 @@ function connectable({
     }
   }
 
-  let close = function noop() {}
+  let terminate = function noop() {}
 
   const store = readable(
     false,
@@ -85,7 +99,7 @@ function connectable({
         resource,
         beacon,
         options,
-        onIdFound(id) {
+        startBeacon(xSseId) {
           if (beacon <= 0) {
             return
           }
@@ -96,8 +110,11 @@ function connectable({
             // will probably tell you to send the `id` as a body.
             // Don't do that, because that would mean complicating the server side `events()`
             // function by making it async.
-            navigator.sendBeacon(`${path}?x-sse-id=${id}`)
+            navigator.sendBeacon(`${path}?x-sse-id=${xSseId}`)
           }, beacon)
+          return function stop() {
+            clearInterval(interval)
+          }
         },
         onClose,
         onOpen,
@@ -107,21 +124,25 @@ function connectable({
         },
       })
 
-      function terminate() {
+      function terminateLocal() {
         eventSource.controller.abort()
-        clearInterval(interval)
       }
 
-      close = terminate
+      terminate = terminateLocal
 
-      return terminate
+      return terminateLocal
     },
   )
 
   /**
    * @type {Connectable}
    */
-  const connectable = { ...store, close }
+  const connectable = {
+    ...store,
+    close() {
+      terminate()
+    },
+  }
 
   if (cache) {
     cachedConnectables.set(key, connectable)
