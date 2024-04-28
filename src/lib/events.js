@@ -1,17 +1,8 @@
 import { writable } from 'svelte/store'
 import { ok } from './ok'
 import { error } from './error'
-
-function uuid({ short } = { short: false }) {
-  let dt = new Date().getTime()
-  const BLUEPRINT = short ? 'xyxxyxyx' : 'xxxxxxxx-xxxx-yxxx-yxxx-xxxxxxxxxxxx'
-  const RESULT = BLUEPRINT.replace(/[xy]/g, function check(c) {
-    const r = (dt + Math.random() * 16) % 16 | 0
-    dt = Math.floor(dt / 16)
-    return (c == 'x' ? r : (r & 0x3) | 0x8).toString(16)
-  })
-  return RESULT
-}
+import { beacon } from './beacon'
+import { uuid } from './uuid'
 
 /**
  * @typedef CreateEmitterPayload
@@ -246,16 +237,7 @@ export function events({ start, cancel, request, headers, timeout = 7000 }) {
    */
   const context = { connected: true }
 
-  const search = request.url.split('?')[1] ?? ''
-
-  let id = ''
-
-  if (search.length > 0) {
-    const params = new URLSearchParams(search)
-    if (params.has('x-sse-id')) {
-      id = params.get('x-sse-id') ?? ''
-    }
-  }
+  let id = beacon({ request })
 
   if (id) {
     const timeoutOld = timeouts.get(id)

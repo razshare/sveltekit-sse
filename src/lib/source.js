@@ -29,6 +29,7 @@ import { IS_BROWSER } from './constants'
  * @property {import('./types').Options} options Options for the underlying http request.
  * @property {import('./types').EventListener} onError
  * @property {import('./types').EventListener} onClose
+ * @property {import('./types').EventListener} onOpen
  */
 
 /**
@@ -48,7 +49,15 @@ const cachedConnectables = new Map()
  * @param {ConnectPayload} payload
  * @returns {Connectable}
  */
-function connectable({ resource, cache, beacon, options, onClose, onError }) {
+function connectable({
+  resource,
+  cache,
+  beacon,
+  options,
+  onClose,
+  onError,
+  onOpen,
+}) {
   const key = btoa(JSON.stringify({ resource, options, beacon }))
 
   if (cache) {
@@ -91,6 +100,7 @@ function connectable({ resource, cache, beacon, options, onClose, onError }) {
           }, beacon)
         },
         onClose,
+        onOpen,
         onError,
         onMessage(e) {
           set({ id: e.id, event: e.event, data: decodeURIComponent(e.data) })
@@ -129,6 +139,7 @@ function connectable({ resource, cache, beacon, options, onClose, onError }) {
  * > events on the given `resource`.
  * @typedef SourceConfiguration
  * @property {import('./types').EventListener} [close] Do something whenever the connection closes.
+ * @property {import('./types').EventListener} [open] Do something whenever the connection opens.
  * @property {import('./types').EventListener} [error] Do something whenever there are errors.
  * @property {import('./types').Options} [options] Options for the underlying http request.
  * @property {boolean} [cache] Wether or not to cache connections, defaults to `true`.
@@ -161,7 +172,7 @@ function connectable({ resource, cache, beacon, options, onClose, onError }) {
  */
 export function source(
   from,
-  { error, close, cache = true, beacon = 5000, options = {} } = {},
+  { error, close, open, cache = true, beacon = 5000, options = {} } = {},
 ) {
   if (!IS_BROWSER) {
     return {
@@ -206,6 +217,11 @@ export function source(
     onClose(e) {
       if (close) {
         close(e)
+      }
+    },
+    onOpen(e) {
+      if (open) {
+        open(e)
       }
     },
     onError(e) {

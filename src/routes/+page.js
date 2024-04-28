@@ -8,14 +8,18 @@ export function load({ url }) {
    */
   const quote = source(`/events?${searchParams}`, {
     cache: false,
-    close({ connect }) {
+    close({ status, connect, xSseId }) {
+      console.log('Closed', { status, xSseId })
       console.log('reconnecting...')
       connect()
+    },
+    open({ status, xSseId }) {
+      console.log('Opened', { status, xSseId })
     },
   })
     .select('cat-quote')
     .json(function or({ error, previous, raw }) {
-      console.log(
+      console.warn(
         `Could not parse "${raw}" as json, reverting back to ${previous}. ${error}`,
       )
       return previous

@@ -1,5 +1,9 @@
-import { fetchEventSource } from '@microsoft/fetch-event-source'
+import {
+  EventStreamContentType,
+  fetchEventSource,
+} from '@microsoft/fetch-event-source'
 import { IS_BROWSER } from './constants'
+import { uuid } from './uuid'
 
 /**
  * @callback IdFound
@@ -15,6 +19,7 @@ import { IS_BROWSER } from './constants'
  * @property {import('./types').EventListener} onMessage
  * @property {import('./types').EventListener} onError
  * @property {import('./types').EventListener} onClose
+ * @property {import('./types').EventListener} onOpen
  */
 
 /**
@@ -39,6 +44,7 @@ const connecting = new Map()
  * @property {Array<import('./types').EventListener>} onError
  * @property {Array<import('./types').EventListener>} onClose
  * @property {Array<import('./types').EventListener>} onMessage
+ * @property {Array<import('./types').EventListener>} onOpen
  */
 
 /**
@@ -60,6 +66,7 @@ export function stream({
   onMessage,
   onError,
   onClose,
+  onOpen,
 }) {
   const key = btoa(JSON.stringify({ resource, options, beacon }))
 
@@ -68,9 +75,36 @@ export function stream({
     onClose: [onClose],
     onError: [onError],
     onMessage: [onMessage],
+    onOpen: [onOpen],
   }
 
+  // Assume the worst then let `onopen()` handle the rest
+  let status = 500
+  let statusText = 'Internal Server Error'
+  let headers = new Headers()
+  /** @type {false|string} */
+  let xSseId = false
+
   const controller = new AbortController()
+
+  controller.signal.addEventListener('abort', function abort() {
+    const id = uuid({ short: true })
+    const headers = new Headers()
+    for (const onClose of configuration.onClose) {
+      onClose({
+        id,
+        event: 'close',
+        data: '',
+        connect,
+        controller: result.controller,
+        isLocal: false,
+        status,
+        statusText,
+        headers,
+        xSseId,
+      })
+    }
+  })
 
   const result = {
     get controller() {
@@ -97,20 +131,52 @@ export function stream({
 
     connecting.set(key, Date.now())
 
+    // Reset assumptions on new connections
+    status = 500
+    statusText = 'Internal Server Error'
+    headers = new Headers()
+
     await fetchEventSource(`${resource}`, {
       openWhenHidden,
       ...rest,
       method: 'POST',
-      async onopen({ headers }) {
+      async onopen({
+        headers: headersLocal,
+        status: statusLocal,
+        statusText: statusTextLocal,
+        ok,
+      }) {
+        status = statusLocal
+        statusText = statusTextLocal
+        headers = headersLocal
         connecting.delete(key)
-        if (!onIdFound) {
-          return
+
+        if (ok && headers.get('content-type') === EventStreamContentType) {
+          const xSseIdLocal = headers.get('x-sse-id')
+          if (xSseIdLocal) {
+            xSseId = xSseIdLocal
+            if (onIdFound) {
+              onIdFound(xSseId ?? '')
+            }
+          }
+
+          for (const onOpen of configuration.onOpen) {
+            onOpen({
+              id: '',
+              event: 'open',
+              data: '',
+              connect,
+              controller: result.controller,
+              isLocal: false,
+              status,
+              statusText,
+              headers,
+              xSseId,
+            })
+          }
         }
-        const id = headers.get('x-sse-id')
-        if (!id) {
-          return
-        }
-        onIdFound(id ?? '')
+
+        controller.abort()
       },
       onmessage({ id, event, data }) {
         for (const onMessage of configuration.onMessage) {
@@ -120,6 +186,11 @@ export function stream({
             data,
             connect,
             controller: result.controller,
+            isLocal: false,
+            status,
+            statusText,
+            headers,
+            xSseId,
           })
         }
       },
@@ -131,6 +202,11 @@ export function stream({
             data: '',
             connect,
             controller: result.controller,
+            isLocal: false,
+            status,
+            statusText,
+            headers,
+            xSseId,
           })
         }
       },
@@ -143,6 +219,11 @@ export function stream({
             error,
             connect,
             controller: result.controller,
+            isLocal: false,
+            status,
+            statusText,
+            headers,
+            xSseId,
           })
         }
       },

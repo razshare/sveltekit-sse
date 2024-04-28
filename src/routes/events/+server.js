@@ -1,3 +1,4 @@
+import { beacon } from '$lib/beacon.js'
 import { events } from '$lib/events.js'
 
 /**
@@ -83,6 +84,11 @@ async function dumpData(lang, { emit, lock }) {
 }
 
 export function POST({ request, url }) {
+  const id = beacon({ request })
+  if (id) {
+    return new Response()
+  }
+
   return events({
     request,
     start(connection) {

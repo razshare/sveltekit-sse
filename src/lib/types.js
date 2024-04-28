@@ -13,11 +13,31 @@ export {}
 /**
  * Describes an event before being serialized.
  * @typedef Event
- * @property {string} id Message identifier.
+ * @property {string} id Message identifier, it identifies a message\
+ * This value is not globally unique, it is only unique within the current stream's scope.
  * @property {string} event Name of the event.
  * @property {string} data Message data.
- * @property {Error} [error] Something went wrong.
+ * @property {boolean} isLocal If `true` then this event has been emitted locally, not by the server.
+ * @property {number} status The status code of the underlying http response.
+ * @property {string} statusText The status text of the underlying http response.
+ * @property {Headers} headers The headers of the underlying http response.
+ * @property {false|string} xSseId Stream identifier, it identifies a stream
+ * ### Insurances
+ *  - This value is unique within the scope of the server instance.\
+ *    Two streams will never be identified by the same stream identifier at the *same time*.
+ *  - This value is generated as an UUID.\
+ *    See https://en.wikipedia.org/wiki/Universally_unique_identifier
+ *
+ * ### Warnings
+ * - Although small, there is still a chance for this value to collide with other
+ *   values generated separately on other server instances.\
+ *   See https://en.wikipedia.org/wiki/Universally_unique_identifier#Collisions
+ * - Given a stream `A` that was created at time `T` and closed at time `T+1`, there could be a stream `B` created at time `T+3` using stream `A`'s old identifier.\
+ *   In other words, new streams could be assigned identifiers previously assigned to other streams (that are now closed).
+ * - This value may sometimes be `false`, specifically when a `close` or `error` event is emitted locally
+ *   before the source connects to the server.
  * @property {function():void} connect Connect the stream.
+ * @property {Error} [error] Something went wrong.
  * > **Note**\
  * > You can use this whenever the stream disconnects for any reason in order to reconnect.
  *
