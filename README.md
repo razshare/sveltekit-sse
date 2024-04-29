@@ -29,7 +29,7 @@ export function POST({ request }) {
     request,
     async start({emit}) {
       while(true){
-        emit('message', 'hello world')
+        emit('message', `the time is ${Date.now()}`)
         await delay(1000)
       }
     },
@@ -59,7 +59,7 @@ In other words, this is wrong
 
 ```js
 export function POST({ request }) {
-  const message = 'hello world'   // <=== wrong, move this below
+  const message = `the time is ${Date.now()}`   // <=== wrong, move this below
   return events({
     request,
     async start({emit}) {
@@ -79,7 +79,7 @@ export function POST({ request }) {
   return events({
     request,
     async start({emit}) {
-      const message = 'hello world'   // <=== this is correct
+      const message = `the time is ${Date.now()}`   // <=== this is correct
       while(true){
         emit('message', message)
         await delay(1000)
