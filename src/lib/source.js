@@ -295,7 +295,28 @@ export function source(
          * @returns
          */
         transform(transformer) {
-          return derived(storeLocal, transformer)
+          return readable(
+            null,
+            /**
+             *
+             * @param {function(null|T):void} set
+             * @returns
+             */
+            function start(set) {
+              const unsubscribe = connected.subscribe(function watch(value) {
+                if (value && value.event === eventName) {
+                  const valueLocal = transformer(value.data)
+                  set(valueLocal)
+                }
+              })
+
+              return function stop() {
+                connected.close()
+                unsubscribe()
+              }
+            },
+          )
+          // return derived(storeLocal, transformer)
         },
         /**
          * @template [T = any]
