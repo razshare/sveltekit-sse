@@ -7,7 +7,7 @@
   value={$page.url.searchParams.get('lang') || 'en'}
   on:change={async function pick(e) {
     $page.url.searchParams.set('lang', e.currentTarget.value)
-    goto(`?${$page.url.searchParams}`, { invalidateAll: true })
+    goto(`?${$page.url.searchParams}`, { invalidateAll: false })
   }}
 >
   <option value="en">🇦🇺 English</option>

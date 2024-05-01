@@ -116,7 +116,14 @@ function connectable({
             clearInterval(interval)
           }
         },
-        onClose,
+        onClose(e) {
+          if (cachedConnectables.has(key)) {
+            cachedConnectables.delete(key)
+          }
+          if (onClose) {
+            onClose(e)
+          }
+        },
         onOpen,
         onError,
         onMessage(e) {
