@@ -10,7 +10,6 @@
   "svelteBracketNewLine": true,
   "svelteIndentScriptAndStyle": true,
   "useTabs": false,
-  "pluginSearchDirs": ["."],
   "overrides": [{ "files": "*.svelte", "options": { "parser": "svelte" } }],
   "bracketSpacing": true,
   "quoteProps": "consistent"

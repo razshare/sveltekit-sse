@@ -27,8 +27,8 @@ function delay(milliseconds) {
 export function POST({ request }) {
   return events({
     request,
-    async start({emit}) {
-      while(true){
+    async start({ emit }) {
+      while (true) {
         emit('message', `the time is ${Date.now()}`)
         await delay(1000)
       }
@@ -49,21 +49,19 @@ and consume the source on your client with:
 {$value}
 ```
 
-
 > [!CAUTION]
 > Due to how the [beacon api](#beacon) works, you must write all your logic within the `start()` function while on the server.\
 > You can read more on this [here](https://github.com/tncrazvan/sveltekit-sse/issues/36#issuecomment-2069421739).
-
 
 In other words, this is wrong
 
 ```js
 export function POST({ request }) {
-  const message = `the time is ${Date.now()}`   // <=== wrong, move this below
+  const message = `the time is ${Date.now()}` // <=== wrong, move this below
   return events({
     request,
-    async start({emit}) {
-      while(true){
+    async start({ emit }) {
+      while (true) {
         emit('message', message)
         await delay(1000)
       }
@@ -78,9 +76,9 @@ And this is the correct way to do it
 export function POST({ request }) {
   return events({
     request,
-    async start({emit}) {
-      const message = `the time is ${Date.now()}`   // <=== this is correct
-      while(true){
+    async start({ emit }) {
+      const message = `the time is ${Date.now()}` // <=== this is correct
+      while (true) {
         emit('message', message)
         await delay(1000)
       }
@@ -89,20 +87,19 @@ export function POST({ request }) {
 }
 ```
 
-
 ## Reconnect
 
 You can reconnect to the stream whenever the stream closes
 
 ```html
 <script>
-  import { source } from "sveltekit-sse"
-  
+  import { source } from 'sveltekit-sse'
+
   const data = source('/custom-event', {
-    close({connect}){
+    close({ connect }) {
       console.log('reconnecting...')
       connect()
-    }
+    },
   })
 
   setTimeout(function run() {
@@ -115,20 +112,21 @@ You can reconnect to the stream whenever the stream closes
 
 ## Cancel detection
 
-You can run code when a connection is canceled 
+You can run code when a connection is canceled
 
 - by setting `cancel()`
+
   ```js
   export function POST({ request }) {
     return events({
       request,
-      start({emit, lock}) {
+      start({ emit, lock }) {
         emit('message', 'hello')
         lock.set(false)
       },
-      cancel(){
-        console.log("Connection canceled.")
-      }
+      cancel() {
+        console.log('Connection canceled.')
+      },
     })
   }
   ```
@@ -151,7 +149,6 @@ You can run code when a connection is canceled
 
 Both ways are valid.
 
-
 ## Custom Headers
 
 You can apply custom headers to the connection
@@ -164,8 +161,8 @@ You can apply custom headers to the connection
     options: {
       headers: {
         Authorization: 'Bearer ...',
-      }
-    }
+      },
+    },
   })
 
   const data = connection.select('message')
@@ -229,9 +226,9 @@ The locking mechanism is achieved through a `Writable<bool>`, which you can acce
 export function POST({ request }) {
   return events({
     request,
-    start({emit, lock}) {
+    start({ emit, lock }) {
       emit('message', 'hello world')
-      setTimeout(function unlock(){
+      setTimeout(function unlock() {
         lock.set(false)
       }, 2000)
     },
@@ -244,10 +241,11 @@ The above code `emit`s the `hello world` string to the `message` event and close
 > [!WARNING]
 > You should not send any more messages after invoking `lock.set(false)` otherwise your `emit` function will result into an error.\
 > The resulting error is wrapped in `Unsafe<void>`, which you can manage using conditionals
+
 ```js
 lock.set(false)
-const {error} = emit('message', 'I have a bad feeling about this...')
-if(error){
+const { error } = emit('message', 'I have a bad feeling about this...')
+if (error) {
   console.error(error)
   return
 }
@@ -276,26 +274,24 @@ Let's call them `TClient` and `TServer`.
 In order for this to work `TClient` should always be lesser than `TServer`.\
 If possible, you should also take into account network latency and add a bit more padding to either `TClient` or `TServer`.
 
-
-
 You can set `TClient` as you're invoking `source`
 
 ```js
 const connection = source('/events', {
-  beacon:3000,  // <=== this is TClient
+  beacon: 3000, // <=== this is TClient
 })
 ```
 
 And `TServer` as you're invoking `events`
 
 ```js
-export function POST({request}){
+export function POST({ request }) {
   return events({
     request,
-    timeout: 5000,  // <=== this is TServer
-    start(){
+    timeout: 5000, // <=== this is TServer
+    start() {
       // ...
-    }
+    },
   })
 }
 ```

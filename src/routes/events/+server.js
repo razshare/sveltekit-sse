@@ -1,3 +1,4 @@
+import { delay } from '$lib/delay.js'
 import { events, extend } from '$lib/events.js'
 import { findBeacon } from '$lib/findBeacon.js'
 
@@ -46,16 +47,6 @@ function findCatQuote(language) {
   const quotes = LANGUAGE_MAP[language] || CAT_QUOTES
   const index = Math.floor(Math.random() * quotes.length)
   return { id: `item-${index}-${language}`, value: quotes[index] }
-}
-
-/**
- * @param {number} milliseconds
- * @returns
- */
-function delay(milliseconds) {
-  return new Promise(function run(resolve) {
-    setTimeout(resolve, milliseconds)
-  })
 }
 
 /**

@@ -1,17 +1,19 @@
 {
   "name": "sveltekit-sse",
-  "version": "0.12.2",
+  "version": "0.12.3",
   "scripts": {
     "dev": "vite dev",
-    "build": "vite build && npm run package",
+    "build": "vite build",
     "preview": "vite preview",
     "package": "svelte-kit sync && svelte-package && publint",
+    "postpackage": "playwright test",
     "prepublishOnly": "npm run package",
     "check": "svelte-kit sync && svelte-check --tsconfig ./jsconfig.json",
     "check:watch": "svelte-kit sync && svelte-check --tsconfig ./jsconfig.json --watch",
     "lint": "prettier --check . && eslint .",
     "lint:fix": "eslint --no-error-on-unmatched-pattern --fix \"./src/**/*.{js,ts,html,svelte}\"",
-    "format": "prettier --write ."
+    "format": "prettier --write .",
+    "test": "playwright test"
   },
   "exports": {
     ".": {
@@ -30,6 +32,7 @@
     "svelte": "^4.0.0"
   },
   "devDependencies": {
+    "@playwright/test": "^1.28.1",
     "@microsoft/fetch-event-source": "^2.0.1",
     "@sveltejs/adapter-auto": "^3.0.0",
     "@sveltejs/kit": "^2.0.0",
