@@ -1,6 +1,6 @@
 {
   "name": "sveltekit-sse",
-  "version": "0.12.3",
+  "version": "0.12.4",
   "scripts": {
     "dev": "vite dev",
     "build": "vite build",
@@ -28,8 +28,8 @@
   ],
   "peerDependencies": {
     "@microsoft/fetch-event-source": "^2.0.1",
-    "@sveltejs/kit": "^1.25.2 || ^2.0.0",
-    "svelte": "^4.0.0"
+    "@sveltejs/kit": ">=1.0.0",
+    "svelte": ">=3.0.0"
   },
   "devDependencies": {
     "@playwright/test": "^1.28.1",
