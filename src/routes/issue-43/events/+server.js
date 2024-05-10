@@ -1,4 +1,4 @@
-import { events } from 'sveltekit-sse';
+import { events } from '$lib'
 
 /**
  *
@@ -7,8 +7,8 @@ import { events } from 'sveltekit-sse';
  */
 function delay(milliseconds) {
   return new Promise(function start(resolve) {
-    setTimeout(resolve, milliseconds);
-  });
+    setTimeout(resolve, milliseconds)
+  })
 }
 
 export async function POST({ request }) {
@@ -17,9 +17,9 @@ export async function POST({ request }) {
     async start({ emit }) {
       // eslint-disable-next-line no-constant-condition
       while (true) {
-        emit('message', `${Date.now()}`);
-        await delay(1000);
+        emit('message', `${Date.now()}`)
+        await delay(1000)
       }
-    }
-  });
+    },
+  })
 }
