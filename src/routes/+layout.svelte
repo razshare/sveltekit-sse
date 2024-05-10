@@ -1,20 +1,11 @@
-<script>
-  import { goto } from '$app/navigation'
-  import { page } from '$app/stores'
-</script>
+<header>
+  <nav>
+    <a href="/">Home</a>
+    <a href="/room">Room</a>
+    <a href="/room/waiting-lobby">Waiting Lobby</a>
+  </nav>
+</header>
 
-<select
-  value={$page.url.searchParams.get('lang') || 'en'}
-  on:change={async function pick(e) {
-    $page.url.searchParams.set('lang', e.currentTarget.value)
-    goto(`?${$page.url.searchParams}`, { invalidateAll: false })
-  }}
->
-  <option value="en">🇦🇺 English</option>
-  <option value="it">🇮🇹 Italiano</option>
-</select>
-
-<br />
 <br />
 
 <slot />
