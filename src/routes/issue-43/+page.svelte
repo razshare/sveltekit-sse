@@ -1,16 +1,42 @@
 <!-- +page.svelte -->
 <script>
   import { source } from '$lib'
+  import { playwright } from '$lib/playwright/playwright'
 
   let reconnect = function noop() {
     console.log('test')
   }
+
   const connection = source(`/events`, {
     close({ connect }) {
+      playwright.state.issue43.disconnections++
       reconnect = connect
+    },
+    open() {
+      playwright.state.issue43.connections++
     },
   })
   const message = connection.select('message')
+
+  setTimeout(function disconnect() {
+    connection.close()
+  }, 500)
+
+  setTimeout(function disconnect() {
+    reconnect()
+  }, 1000)
+
+  setTimeout(function disconnect() {
+    connection.close()
+  }, 1500)
+
+  setTimeout(function disconnect() {
+    reconnect()
+  }, 2000)
+
+  setTimeout(function disconnect() {
+    connection.close()
+  }, 2500)
 </script>
 
 <h3>{$message}</h3>

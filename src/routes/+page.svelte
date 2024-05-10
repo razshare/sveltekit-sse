@@ -1,15 +1,13 @@
 <script>
   import { enhance } from '$app/forms'
-  import { playwright } from '$lib/playwright/playwright.js'
+  import { playwright } from '$lib/playwright/playwright'
   export let data
   $: quote = data?.quote
 
   $: if ($quote) {
     console.log({ $quote })
     console.log({ counter: playwright.state.counter })
-    playwright.state = {
-      counter: ++playwright.state.counter,
-    }
+    playwright.state.counter = ++playwright.state.counter
   }
 </script>
 
