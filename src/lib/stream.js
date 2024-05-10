@@ -93,19 +93,17 @@ export function stream({
    * It should only be used when we want to hint that the abort signal is in some
    * way issued by the server, for example if the server returns a status code >= 300.
    */
-  const controller = new AbortController()
+  let controller = new AbortController()
 
   /**
    * Userland should never have direct access to this controller.\
    * Indirection for the actual `controller`.
    */
-  const controllerLocal = new AbortController()
+  let controllerLocal = new AbortController()
 
-  function close() {
-    controllerLocal.abort()
-  }
+  let firstControllerWiring = true
 
-  controller.signal.addEventListener('abort', function abort() {
+  function abort() {
     if (stopBeacon) {
       stopBeacon()
     }
@@ -126,12 +124,31 @@ export function stream({
         close,
       })
     }
-  })
+  }
 
-  controllerLocal.signal.addEventListener('abort', function abortLocal() {
+  function abortLocal() {
     localAbort = true
     controller.abort()
-  })
+  }
+
+  function wireControllers() {
+    if (!firstControllerWiring) {
+      controller.signal.removeEventListener('abort', abort)
+      controllerLocal.signal.removeEventListener('abort', abortLocal)
+      controller = new AbortController()
+      controllerLocal = new AbortController()
+    } else {
+      firstControllerWiring = false
+    }
+
+    controller.signal.addEventListener('abort', abort)
+
+    controllerLocal.signal.addEventListener('abort', abortLocal)
+  }
+
+  function close() {
+    controllerLocal.abort()
+  }
 
   const result = {
     get controller() {
@@ -165,6 +182,8 @@ export function stream({
 
     // Reset beacon stopper
     stopBeacon = false
+
+    wireControllers()
 
     await fetchEventSource(`${resource}`, {
       openWhenHidden,
