@@ -2,12 +2,14 @@
 <script>
   import { source } from '$lib'
   import { playwright } from '$lib/playwright/playwright'
+  import { onMount } from 'svelte'
 
   let reconnect = function noop() {
-    console.log('test')
+    console.log('noop')
   }
 
-  const connection = source(`/events`, {
+  const connection = source(`/issue-43/events`, {
+    beacon: 0,
     close({ connect }) {
       playwright.state.issue43.disconnections++
       reconnect = connect
@@ -18,25 +20,27 @@
   })
   const message = connection.select('message')
 
-  setTimeout(function disconnect() {
-    connection.close()
-  }, 500)
+  onMount(function start() {
+    setTimeout(function disconnect() {
+      connection.close()
+    }, 500)
 
-  setTimeout(function disconnect() {
-    reconnect()
-  }, 1000)
+    setTimeout(function disconnect() {
+      reconnect()
+    }, 1000)
 
-  setTimeout(function disconnect() {
-    connection.close()
-  }, 1500)
+    setTimeout(function disconnect() {
+      connection.close()
+    }, 1500)
 
-  setTimeout(function disconnect() {
-    reconnect()
-  }, 2000)
+    setTimeout(function disconnect() {
+      reconnect()
+    }, 2000)
 
-  setTimeout(function disconnect() {
-    connection.close()
-  }, 2500)
+    setTimeout(function disconnect() {
+      connection.close()
+    }, 2500)
+  })
 </script>
 
 <h3>{$message}</h3>

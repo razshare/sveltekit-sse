@@ -21,6 +21,7 @@ function createEmitter({ controller, context }) {
 
   return function emit(eventName, data) {
     if (!context.connected) {
+      console.log('Client disconnected')
       return error('Client disconnected from the stream.')
     }
     const typeOfEventName = typeof eventName
@@ -98,6 +99,21 @@ function createTimeout({ context, lock, timeout }) {
   }, timeout)
 }
 
+// Used for debugging purposes
+setInterval(function run() {
+  const keys = timeouts.keys()
+  let counter = 0
+  for (const key of keys) {
+    console.log({ key })
+    counter++
+  }
+  if (counter === 0) {
+    console.log('No timeouts found.')
+  } else {
+    console.log(`${counter} timeouts found.`)
+  }
+}, 1000)
+
 /**
  * @typedef CreateStreamPayload
  * @property {Start} start
@@ -138,6 +154,8 @@ function createStream({ start, xSseId: id, lock, context, cancel, timeout }) {
           // This means the client has already disconnected without notice.
         }
         context.connected = false
+
+        timeouts.delete(id)
 
         const cancelInline = await started
         if (cancelInline) {
@@ -266,7 +284,7 @@ export function extend({ beacon, timeout = 7000 }) {
  * Create one stream and emit multiple server sent events.
  * @param {EventsPayload} payload
  */
-export function events({ start, cancel, request, headers, timeout = 7000 }) {
+export function events({ start, cancel, request, headers, timeout = 45_000 }) {
   const context = createContext()
 
   let xSseId = ''

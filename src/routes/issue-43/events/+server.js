@@ -1,23 +1,17 @@
 import { events } from '$lib'
-
-/**
- *
- * @param {number} milliseconds
- * @returns
- */
-function delay(milliseconds) {
-  return new Promise(function start(resolve) {
-    setTimeout(resolve, milliseconds)
-  })
-}
+import { delay } from '$lib/delay.js'
 
 export async function POST({ request }) {
   return events({
+    timeout: 0,
     request,
     async start({ emit }) {
       // eslint-disable-next-line no-constant-condition
       while (true) {
-        emit('message', `${Date.now()}`)
+        const { error } = emit('message', `${Date.now()}`)
+        if (error) {
+          return
+        }
         await delay(1000)
       }
     },

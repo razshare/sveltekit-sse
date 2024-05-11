@@ -1,6 +1,7 @@
 import { derived, readable } from 'svelte/store'
 import { stream } from './stream'
 import { IS_BROWSER } from './constants'
+import { createRandomValue } from './createRandomValue'
 /**
  * @template T
  * @typedef {{[K in keyof T]:T[K]} & {}} Pretty
@@ -26,6 +27,8 @@ import { IS_BROWSER } from './constants'
  * > You can set `beacon` to `0` or a negative value to disable this behavior.\
  * > Remember that if you disable this behavior but the server sent event still declares
  * > a `timeout`, the stream will close without notice after the `timeout` expires on the server.
+ * @property {number} beaconVariance A variance to consider when sending `beacon`s to the server, in `milliseconds`.\
+ * If the `beacon` is configured to be sent every `5000 milliseconds`, and this value is configured to `500 milliseconds`, then the actual beacon request time will vary between `4500 and 5500 milliseconds`.
  * @property {import('./types').Options} options Options for the underlying http request.
  * @property {import('./types').EventListener} onError
  * @property {import('./types').EventListener} onClose
@@ -67,6 +70,7 @@ function connectable({
   resource,
   cache,
   beacon,
+  beaconVariance,
   options,
   onClose,
   onError,
@@ -104,6 +108,10 @@ function connectable({
             return
           }
           const path = resource.toString().split('?', 2)[0] ?? '/'
+          const delayValue = createRandomValue(
+            beacon - beaconVariance,
+            beacon + beaconVariance,
+          )
           clearInterval(interval)
           interval = setInterval(function run() {
             // Since Beacons don't allow for headers to be set, your instinct
@@ -111,7 +119,7 @@ function connectable({
             // Don't do that, because that would mean complicating the server side `events()`
             // function by making it async.
             navigator.sendBeacon(`${path}?x-sse-id=${xSseId}`)
-          }, beacon)
+          }, delayValue)
           return function stop() {
             clearInterval(interval)
           }
@@ -175,7 +183,9 @@ function connectable({
  * > Connections are cached based on `from`, `beacon` and `options`.\
  * > If two sources define all three properties with the same values, then both sources will share the same connection,
  * > otherwise they will create and use two separate connections.
- * @property {number} [beacon]
+ * @property {number} [beacon] How often should beacons be sent to the server (in order to keep the connection alive), in `milliseconds`.
+ * @property {number} [beaconVariance] A variance to consider when sending `beacon`s to the server, in `milliseconds`.\
+ * If the `beacon` is configured to be sent every `5000 milliseconds`, and this value is configured to `500 milliseconds`, then the actual beacon request time will vary between `4500 and 5500 milliseconds`.
  */
 
 /**
@@ -200,7 +210,15 @@ function connectable({
  */
 export function source(
   from,
-  { error, close, open, cache = true, beacon = 5000, options = {} } = {},
+  {
+    error,
+    close,
+    open,
+    cache = true,
+    beacon = 30000,
+    beaconVariance = 5000,
+    options = {},
+  } = {},
 ) {
   if (!IS_BROWSER) {
     return {
@@ -241,6 +259,7 @@ export function source(
     resource: from,
     cache,
     beacon,
+    beaconVariance,
     options,
     onClose(e) {
       if (close) {
