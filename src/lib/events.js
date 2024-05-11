@@ -21,7 +21,6 @@ function createEmitter({ controller, context }) {
 
   return function emit(eventName, data) {
     if (!context.connected) {
-      console.log('Client disconnected')
       return error('Client disconnected from the stream.')
     }
     const typeOfEventName = typeof eventName
@@ -100,19 +99,19 @@ function createTimeout({ context, lock, timeout }) {
 }
 
 // Used for debugging purposes
-setInterval(function run() {
-  const keys = timeouts.keys()
-  let counter = 0
-  for (const key of keys) {
-    console.log({ key })
-    counter++
-  }
-  if (counter === 0) {
-    console.log('No timeouts found.')
-  } else {
-    console.log(`${counter} timeouts found.`)
-  }
-}, 1000)
+// setInterval(function run() {
+//   const keys = timeouts.keys()
+//   let counter = 0
+//   for (const key of keys) {
+//     console.log({ key })
+//     counter++
+//   }
+//   if (counter === 0) {
+//     console.log('No timeouts found.')
+//   } else {
+//     console.log(`${counter} timeouts found.`)
+//   }
+// }, 1000)
 
 /**
  * @typedef CreateStreamPayload
