@@ -199,7 +199,7 @@ You can reconnect to the stream whenever the stream closes
 
 ## Custom Headers
 
-You can apply custom headers to the connection
+You can apply custom headers to the request
 
 ```html
 <script>
@@ -221,7 +221,7 @@ You can apply custom headers to the connection
 
 ## Transform
 
-While on the client, you can transform the stream into any type of object you want by using `source::select::transform`.
+You can transform the stream into any type of object you want by using `source::select::transform`.
 
 The `transform` method receives a `string`, which is the value of the store.
 
