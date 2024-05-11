@@ -125,7 +125,7 @@ Both ways are valid.
 
 ## Cleanup
 
-Whenever the client disconnects from the stream the server will detect that event and trigger your [stop function](#stop).\
+Whenever the client disconnects from the stream, the server will detect that event and trigger your [stop function](#stop).\
 This behavior has a delay of 30 seconds by default.\
 This is achieved through a ping mechanism, by periodically (_every 30 seconds by default_) sending a ping event to the client.
 
