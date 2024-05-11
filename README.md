@@ -8,11 +8,11 @@ Install with:
 npm i -D sveltekit-sse
 ```
 
-Create your server sent event with:
+Produce your server sent events with:
 
 ```js
 // src/routes/custom-event/+server.js
-import { events } from 'sveltekit-sse'
+import { produce } from 'sveltekit-sse'
 
 /**
  * @param {number} milliseconds
@@ -24,20 +24,20 @@ function delay(milliseconds) {
   })
 }
 
-export function POST({ request }) {
-  return events({
-    request,
-    async start({ emit }) {
+export function POST() {
+  return produce(async function start({ emit }) {
       while (true) {
-        emit('message', `the time is ${Date.now()}`)
+        const {error} = emit('message', `the time is ${Date.now()}`)
+        if(error) {
+          return
+        }
         await delay(1000)
       }
-    },
   })
 }
 ```
 
-and consume the source on your client with:
+and consume them on your client with:
 
 ```svelte
 <script>
@@ -49,40 +49,125 @@ and consume the source on your client with:
 {$value}
 ```
 
-> [!CAUTION]
-> Due to how the [beacon api](#beacon) works, you must write all your logic within the `start()` function while on the server.\
-> You can read more on this [here](https://github.com/tncrazvan/sveltekit-sse/issues/36#issuecomment-2069421739).
 
-In other words, this is wrong
+## Locking
+
+All streams are locked server side by default, meaning the server will keep the connection alive indefinitely.
+
+The locking mechanism is achieved through a `Writable<bool>`, which you can access from the `start` function.
 
 ```js
-export function POST({ request }) {
-  const message = `the time is ${Date.now()}` // <=== wrong, move this below
-  return events({
-    request,
-    async start({ emit }) {
-      while (true) {
-        emit('message', message)
-        await delay(1000)
-      }
-    },
+import { produce } from 'sveltekit-sse'
+export function POST() {
+  return produce(function start({ emit, lock }) {
+    emit('message', 'hello world')
+    setTimeout(function unlock() {
+      lock.set(false)
+    }, 2000)
   })
 }
 ```
 
-And this is the correct way to do it
+The above code `emit`s the `hello world` string with the `message` event name and closes the stream after 2 seconds.
+
+You should not send any more messages after invoking `lock.set(false)` otherwise your `emit` function will return an error.\
+The resulting error is wrapped in `Unsafe<void>`, which you can manage using conditionals
 
 ```js
-export function POST({ request }) {
-  return events({
-    request,
-    async start({ emit }) {
-      const message = `the time is ${Date.now()}` // <=== this is correct
-      while (true) {
-        emit('message', message)
-        await delay(1000)
+lock.set(false)
+const { error } = emit('message', 'I have a bad feeling about this...')
+if (error) {
+  console.error(error)
+  return
+}
+```
+
+## Stop
+
+You can stop a connection and run code when a connection is stopped
+- by returning a function from `start()`
+  ```js
+  import { produce } from 'sveltekit-sse'
+  export function POST() {
+    return produce(function start({ emit, lock }) {
+      emit('message', 'hello')
+      return function cancel() {
+        console.log('Connection canceled.')
+      }
+    })
+  }
+  ```
+
+- or by setting `options::stop()` and calling `lock.set(false)`
+
+  ```js
+  import { produce } from 'sveltekit-sse'
+  export function POST() {
+    return produce(
+      function start({ emit, lock }) {
+        emit('message', 'hello')
+        lock.set(false)
+      },
+      {
+        stop() {
+          console.log('Connection stopped.')
+        },
+      },
+    )
+  }
+  ```
+
+Both ways are valid.
+
+> [!NOTE]
+> In the second case, using `options::stop()`, your code will also 
+> run if the client itself cancels the connections.
+
+# Cleanup
+
+Whenever the client disconnects from the stream the server will detect that event and trigger your [stop function](#stop).\
+This behavior has a delay of 30 seconds by default.\
+This is achieved through a ping mechanism, by periodically (_every 30 seconds by default_) sending a ping event to the client.
+
+You can customize that ping event's time interval 
+
+```js
+import { produce } from 'sveltekit-sse'
+export function POST() {
+  return produce(
+    function start() {
+      // Your emitters go here
+    },
+    { 
+      ping: 4000, // Custom ping interval
+      stop(){
+        console.log("Client disconnected.")
       }
     },
+  )
+}
+```
+
+You can also forcefully detect disconnected clients by simply emitting any event to that client, you will get back an error if the client has disconnected.
+
+When that happens, you should stop your producer
+
+```js
+import { produce } from 'sveltekit-sse'
+export function POST() {
+  return produce(async function start({ emit }) {
+    await new Promise(function start(resolve){
+      someRemoteEvent("incoming-data", function run(data){
+        const {error} = emit("data", data)
+        if(error){
+          resolve(error)
+        }
+      })
+    })
+    return function stop(){
+      // Do your cleanup here
+      console.log("Client has disconnected.")
+    }
   })
 }
 ```
@@ -95,59 +180,22 @@ You can reconnect to the stream whenever the stream closes
 <script>
   import { source } from 'sveltekit-sse'
 
-  const data = source('/custom-event', {
+  const connection = source('/custom-event', {
     close({ connect }) {
       console.log('reconnecting...')
       connect()
     },
   })
 
+  const data = connection.select('message')
+
   setTimeout(function run() {
-    data.close()
+    connection.close()
   }, 3000)
 </script>
 
 {$data}
 ```
-
-## Cancel detection
-
-You can run code when a connection is canceled
-
-- by setting `cancel()`
-
-  ```js
-  export function POST({ request }) {
-    return events({
-      request,
-      start({ emit, lock }) {
-        emit('message', 'hello')
-        lock.set(false)
-      },
-      cancel() {
-        console.log('Connection canceled.')
-      },
-    })
-  }
-  ```
-
-- or by returning a function from `start()`
-  ```js
-  export function POST({ request }) {
-    return events({
-      request,
-      start({emit, lock}) {
-        emit('message', 'hello')
-        lock.set(false)
-        return cancel(){
-          console.log("Connection canceled.")
-        }
-      }
-    })
-  }
-  ```
-
-Both ways are valid.
 
 ## Custom Headers
 
@@ -215,92 +263,6 @@ You can parse incoming messages from the source as json using `source::select::j
 
 When a parsing error occurs, `or` is invoked.\
 Whatever this function returns will become the new value of the store, in the example above `previous`, which is the previous (valid) value of the store.
-
-## Locking
-
-All streams are locked server side by default, meaning the server will keep the connection alive indefinitely.
-
-The locking mechanism is achieved through a `Writable<bool>`, which you can access from the `start` function.
-
-```js
-export function POST({ request }) {
-  return events({
-    request,
-    start({ emit, lock }) {
-      emit('message', 'hello world')
-      setTimeout(function unlock() {
-        lock.set(false)
-      }, 2000)
-    },
-  })
-}
-```
-
-The above code `emit`s the `hello world` string to the `message` event and closes the stream after 2 seconds.
-
-> [!WARNING]
-> You should not send any more messages after invoking `lock.set(false)` otherwise your `emit` function will result into an error.\
-> The resulting error is wrapped in `Unsafe<void>`, which you can manage using conditionals
-
-```js
-lock.set(false)
-const { error } = emit('message', 'I have a bad feeling about this...')
-if (error) {
-  console.error(error)
-  return
-}
-```
-
-## Beacon
-
-Currently there is no way to detect canceled http connections in SvelteKit.
-
-This poses a big issue for server sent events because that means there is no way to detect when to automatically un`lock` the stream and stop emitting data.
-
-The current solution to this problem is using [beacons](https://developer.mozilla.org/en-US/docs/Web/API/Navigator/sendBeacon) to keep the stream alive.
-
-The algorithm is simple in theory, but it requires both server and client to cooperate
-
-1. **Server:** _Accept client connection._
-2. **Server:** _Open a stream to the client._
-3. **Server:** _Schedule a stream destructor in `T` milliseconds._
-4. **Client:** _Send a beacon to the server to verify you're alive._
-5. **Server:** _Reset the stream destructor [if the beacon is valid](https://github.com/tncrazvan/sveltekit-sse/blob/8f1fba1f80be0a7df0e75d0060be2f91713cbd27/src/lib/events.js#L261-L270)._
-6. Repeat from _step 3_.
-
-The key part here is obviously `T`, which lives on both the client and the server.\
-Let's call them `TClient` and `TServer`.
-
-In order for this to work `TClient` should always be lesser than `TServer`.\
-If possible, you should also take into account network latency and add a bit more padding to either `TClient` or `TServer`.
-
-You can set `TClient` as you're invoking `source`
-
-```js
-const connection = source('/events', {
-  beacon: 3000, // <=== this is TClient
-})
-```
-
-And `TServer` as you're invoking `events`
-
-```js
-export function POST({ request }) {
-  return events({
-    request,
-    timeout: 5000, // <=== this is TServer
-    start() {
-      // ...
-    },
-  })
-}
-```
-
-You don't need to manually set these variables up yourself, but you can.\
-The default values are `beacon: 5000` and `timeout: 7000`.
-
-> [!NOTE]
-> You can set both `timeout` and `beacon` to `0` or any negative value to disable beacons completely.
 
 ## Other notes
 

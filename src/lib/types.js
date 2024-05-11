@@ -97,10 +97,3 @@ export {}
  * Options for the underlying http request.
  * @typedef {Pick<import('@microsoft/fetch-event-source').FetchEventSourceInit, "body"|"cache"|"credentials"|"fetch"|"headers"|"integrity"|"keepalive"|"method"|"mode"|"openWhenHidden"|"redirect"|"referrer"|"referrerPolicy"|"window">} Options
  */
-
-/**
- * @typedef Beacon
- * @property {string} xSseId The stream's identifier if the request is a beacon, `false` otherwise.\
- * The stream identifier is obtained from the request's `x-sse-id` query.\
- * Empty identifiers are not valid..
- */

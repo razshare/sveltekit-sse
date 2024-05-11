@@ -68,7 +68,7 @@ function createEmitter({ controller, context }) {
  * Defaults to `30_000` milliseconds (`30` seconds).
  * @property {import('svelte/store').Writable<boolean>} lock
  * @property {StreamContext} context
- * @property {Cancel} [cancel]
+ * @property {Stop} [stop]
  */
 
 /**
@@ -76,7 +76,7 @@ function createEmitter({ controller, context }) {
  * @param {ProducePayload} payload
  * @returns
  */
-function produceStream({ start, lock, context, cancel, ping = 30_000 }) {
+function produceStream({ start, lock, context, stop, ping = 30_000 }) {
   return new ReadableStream({
     async start(controller) {
       context.connected = true
@@ -97,7 +97,7 @@ function produceStream({ start, lock, context, cancel, ping = 30_000 }) {
        * @param {{$lock:boolean}} payload
        * @returns {Promise<boolean>}
        */
-      async function stop({ $lock }) {
+      async function stopLocal({ $lock }) {
         if ($lock || !context.connected) {
           return false
         }
@@ -117,14 +117,14 @@ function produceStream({ start, lock, context, cancel, ping = 30_000 }) {
           await cancelInline(self)
         }
 
-        if (cancel) {
-          await cancel(self)
+        if (stop) {
+          await stop(self)
         }
         return true
       }
 
       const unsubscribe = lock.subscribe(async function run($lock) {
-        if (await stop({ $lock })) {
+        if (await stopLocal({ $lock })) {
           unsubscribe()
         }
       })
@@ -144,27 +144,27 @@ function produceStream({ start, lock, context, cancel, ping = 30_000 }) {
 /**
  * @callback Start
  * @param {import('./types').Connection} payload
- * @returns {void|Cancel|PromiseLike<void>|PromiseLike<Cancel>}
+ * @returns {void|Stop|PromiseLike<void>|PromiseLike<Stop>}
  */
 
 /**
- * @callback Cancel
+ * @callback Stop
  * @param {UnderlyingDefaultSource<string>} stream
  * @returns {void|PromiseLike<void>}
  */
 
 /**
  * test
- * @typedef ProduceConfiguration
+ * @typedef ProduceOptions
  * @property {Record<string, string>} [headers]
  * @property {number} [ping] The server will ping the client every `interval` milliseconds to check if it's still connected.\
  * If the client has disconnected, the stream will be un`locked` and the connection will terminate.\
  * Defaults to `30_000` milliseconds (`30` seconds).
- * @property {Cancel} [cancel] Do something when the stream is canceled.\
- * The following qualify as "canceling"
+ * @property {Stop} [stop] Do something when the stream is stopped.\
+ * The following qualify as "stopped"
  * - Calling `.cancel` on the underlying `ReadableStream`
  * - Calling `lock.set(false)`
- * - Timeout due to missing beacon signals
+ * - Client disconnected
  */
 
 /**
@@ -200,9 +200,9 @@ function createContext() {
  * >   })
  * > }
  * > ```
- * @param {ProduceConfiguration} options
+ * @param {ProduceOptions} options
  */
-export function produce(start, { cancel, headers, ping = 30_000 } = {}) {
+export function produce(start, { stop, headers, ping = 30_000 } = {}) {
   const context = createContext()
   const lock = writable(true)
 
@@ -210,7 +210,7 @@ export function produce(start, { cancel, headers, ping = 30_000 } = {}) {
     start,
     lock,
     ping,
-    cancel,
+    stop,
     context,
   })
 

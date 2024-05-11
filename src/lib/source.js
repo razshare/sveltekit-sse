@@ -125,7 +125,7 @@ function connectable({ resource, cache, options, onClose, onError, onOpen }) {
  * @property {import('./types').Options} [options] Options for the underlying http request.
  * @property {boolean} [cache] Wether or not to cache connections, defaults to `true`.
  * > **Note**\
- * > Connections are cached based on `from`, `beacon` and `options`.\
+ * > Connections are cached based on `from` and `options`.\
  * > If two sources define all three properties with the same values, then both sources will share the same connection,
  * > otherwise they will create and use two separate connections.
  */
@@ -138,7 +138,6 @@ function connectable({ resource, cache, options, onClose, onError, onOpen }) {
  * > ```js
  * > const connection = source({
  * >  from: '/events',
- * >  beacon: 1000,
  * >  options: {
  * >    headers: {
  * >      'Authorization': `Bearer ${token}`

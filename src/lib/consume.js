@@ -38,7 +38,7 @@ import { uuid } from './uuid'
 const connecting = new Map()
 
 /**
- * @typedef StreamConfiguration
+ * @typedef StreamEvents
  * @property {Array<import('./types').EventListener>} onError
  * @property {Array<import('./types').EventListener>} onClose
  * @property {Array<import('./types').EventListener>} onMessage
@@ -66,8 +66,8 @@ export function consume({
 }) {
   const key = btoa(JSON.stringify({ resource, options }))
 
-  /** @type {StreamConfiguration} */
-  const configuration = {
+  /** @type {StreamEvents} */
+  const events = {
     onClose: [onClose],
     onError: [onError],
     onMessage: [onMessage],
@@ -79,8 +79,6 @@ export function consume({
   let statusText = 'Internal Server Error'
   let headers = new Headers()
   let localAbort = false
-  /** @type {false|function():void} */
-  let stopBeacon = false
 
   /**
    * Userland should never have direct access to this controller.\
@@ -98,13 +96,10 @@ export function consume({
   let firstControllerWiring = true
 
   function abort() {
-    if (stopBeacon) {
-      stopBeacon()
-    }
     const id = uuid({ short: true })
     const isLocal = localAbort
     localAbort = false
-    for (const onClose of configuration.onClose) {
+    for (const onClose of events.onClose) {
       onClose({
         id,
         event: 'close',
@@ -173,9 +168,6 @@ export function consume({
     statusText = 'Internal Server Error'
     headers = new Headers()
 
-    // Reset beacon stopper
-    stopBeacon = false
-
     wireControllers()
 
     await fetchEventSource(`${resource}`, {
@@ -194,7 +186,7 @@ export function consume({
         connecting.delete(key)
 
         if (ok && headers.get('content-type') === EventStreamContentType) {
-          for (const onOpen of configuration.onOpen) {
+          for (const onOpen of events.onOpen) {
             onOpen({
               id: '',
               event: 'open',
@@ -214,7 +206,7 @@ export function consume({
         }
       },
       onmessage({ id, event, data }) {
-        for (const onMessage of configuration.onMessage) {
+        for (const onMessage of events.onMessage) {
           onMessage({
             id,
             event,
@@ -229,10 +221,7 @@ export function consume({
         }
       },
       onclose() {
-        if (stopBeacon) {
-          stopBeacon()
-        }
-        for (const onClose of configuration.onClose) {
+        for (const onClose of events.onClose) {
           onClose({
             id: '',
             event: 'close',
@@ -247,7 +236,7 @@ export function consume({
         }
       },
       onerror(error) {
-        for (const onError of configuration.onError) {
+        for (const onError of events.onError) {
           onError({
             id: '',
             event: 'error',
