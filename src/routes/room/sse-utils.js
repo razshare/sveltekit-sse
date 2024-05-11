@@ -27,51 +27,60 @@ export function reconnectingSource(url, opts = {}) {
       _connect = connect
     },
 
-    close({ connect }) {
+    close({ connect, isLocal }) {
       status.set('closed')
       _connect = connect
 
-      if (!stopped) {
+      if (isLocal) {
+        stopped = true
+      } else if (!stopped) {
         console.error(
           `Event stream ${url} closed unexpectedly, reconnecting...`,
         )
-        // reconnect() // Temporarily disabled
+        reconnect()
       }
     },
 
-    error({ connect, error }) {
+    error({ connect, error, isLocal }) {
       status.set('errored')
       _connect = connect
       console.error(`Connection to ${url} errored:`, error)
 
-      if (!stopped) {
+      if (isLocal) {
+        stopped = true
+      } else if (!stopped) {
         console.error(
           `Event stream ${url} errored unexpectedly, reconnecting...`,
         )
-        // reconnect() // Temporarily disabled
+        reconnect()
       }
     },
     ...opts,
   })
 
   function listenToStopEvents() {
-    let initial = false
+    let initial = true
     const unsub = connection.select('stop').subscribe(function listen(message) {
-      if (!initial) {
-        initial = true // svelte will call the first subscriber immediately, so we need to ignore
+      if (initial) {
+        initial = false // Svelte will call the first subscriber immediately, so we need to ignore
         return
       }
+
+      // Discard prefix - timetamp followed by colon, space
+      message = message.split(': ')[1]
 
       stopped = true
       connection.close()
       if (message) {
-        console.warn(`Event stream ${url} stoppped by server:`, message)
+        console.warn(`Event stream ${url} stoppped by server:`, message.length)
       } else {
         console.log(`Event stream ${url} stoppped by server.`)
       }
       unsub()
     })
   }
+
+  listenToStopEvents()
 
   return {
     ...connection,

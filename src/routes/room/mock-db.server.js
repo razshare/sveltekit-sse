@@ -46,13 +46,10 @@ export function findMatchingId(users, id) {
  * @template {{id: string}} T
  * @param {import('svelte/store').Writable<T[]>} store
  * @param {T} update
- * @returns {T | undefined}
  */
 export function updateStore(store, update) {
-  let object
-
   store.update(function upsert(objects) {
-    object = findMatchingId(objects, update.id)
+    const object = findMatchingId(objects, update.id)
     if (object) {
       Object.assign(object, update)
     } else {
@@ -60,6 +57,17 @@ export function updateStore(store, update) {
     }
     return objects
   })
+}
 
-  return object
+/**
+ * @template {{id: string}} T
+ * @param {import('svelte/store').Writable<T[]>} store
+ * @param {string} id
+ */
+export function removeFromStore(store, id) {
+  store.update(function removeFrom(objects) {
+    return objects.filter(function exceptWithId(object) {
+      return object.id !== id
+    })
+  })
 }
