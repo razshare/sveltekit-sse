@@ -123,7 +123,7 @@ Both ways are valid.
 > In the second case, using `options::stop()`, your code will also 
 > run if the client itself cancels the connections.
 
-# Cleanup
+## Cleanup
 
 Whenever the client disconnects from the stream the server will detect that event and trigger your [stop function](#stop).\
 This behavior has a delay of 30 seconds by default.\
