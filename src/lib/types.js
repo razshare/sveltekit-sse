@@ -2,7 +2,8 @@ export {}
 
 /**
  * @template T
- * @typedef {{value:T,error:false|Error}} Unsafe
+ * @template [E = Error]
+ * @typedef {{value:T,error:false|E}} Unsafe
  */
 
 /**
@@ -21,21 +22,6 @@ export {}
  * @property {number} status The status code of the underlying http response.
  * @property {string} statusText The status text of the underlying http response.
  * @property {Headers} headers The headers of the underlying http response.
- * @property {false|string} xSseId Stream identifier, it identifies a stream
- * ### Insurances
- *  - This value is unique within the scope of the server instance.\
- *    Two streams will never be identified by the same stream identifier at the *same time*.
- *  - This value is generated as an UUID.\
- *    See https://en.wikipedia.org/wiki/Universally_unique_identifier
- *
- * ### Warnings
- * - Although small, there is still a chance for this value to collide with other
- *   values generated separately on other server instances.\
- *   See https://en.wikipedia.org/wiki/Universally_unique_identifier#Collisions
- * - Given a stream `A` that was created at time `T` and closed at time `T+1`, there could be a stream `B` created at time `T+3` using stream `A`'s old identifier.\
- *   In other words, new streams could be assigned identifiers previously assigned to other streams (that are now closed).
- * - This value may sometimes be `false`, specifically when a `close` or `error` event is emitted locally
- *   before the source connects to the server.
  * @property {function():void} connect Connect the stream.
  * @property {Error} [error] Something went wrong.
  * > **Note**\
@@ -63,14 +49,13 @@ export {}
 
 /**
  * @typedef Connection
- * @property {(eventName:string,data:string)=>import('./types').Unsafe<void>} emit Emit events to the client.\
- * The `Unsafe<void>` wrapper may contain an error
+ * @property {(eventName:string,data:string)=>import('./types').Unsafe<void,Error>} emit Emit events to the client.\
+ * The result wrapper may contain an error
  * ## Example
  * ```js
  * const {error} = emit('message', 'hello world')
  * if(error){
  *  console.error(error)
- *  lock.set(false)
  *  return
  * }
  * ```

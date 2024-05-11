@@ -1,4 +1,4 @@
-import { events } from '$lib'
+import { produce } from '$lib'
 import {
   findMatchingId,
   lobby,
@@ -15,41 +15,38 @@ export async function POST({ route, request }) {
     id = (await request.json()).id
   }
 
-  return events({
-    request,
-    start({ emit, lock }) {
-      const stopper = eventStopper(route.id, emit, lock)
+  return produce(function start({ emit, lock }) {
+    const stopper = eventStopper(route.id, emit, lock)
 
-      updateStore(lobby, { id, approved: undefined })
-      stopper.push(function leaveLobby() {
-        removeFromStore(lobby, id)
-      })
+    updateStore(lobby, { id, approved: undefined })
+    stopper.push(function leaveLobby() {
+      removeFromStore(lobby, id)
+    })
 
-      const unsub = lobby.subscribe(function notify(guests) {
-        const guest = findMatchingId(guests, id)
+    const unsub = lobby.subscribe(function notify(guests) {
+      const guest = findMatchingId(guests, id)
 
-        if (!guest) {
-          // already disconnected
-          return lock.set(false)
-        }
+      if (!guest) {
+        // already disconnected
+        return lock.set(false)
+      }
 
-        const { error } = emit('waitingUser', JSON.stringify(guest))
-        if (error) {
-          console.error(error)
-          lock.set(false)
-        } else if (guest.approved === true || guest.approved === false) {
-          stopper.stop()
-        }
-      })
-      stopper.push(unsub)
-
-      const { error } = emit('waitingUser', JSON.stringify({ id }))
+      const { error } = emit('waitingUser', JSON.stringify(guest))
       if (error) {
         console.error(error)
         lock.set(false)
+      } else if (guest.approved === true || guest.approved === false) {
+        stopper.stop()
       }
+    })
+    stopper.push(unsub)
 
-      return stopper.onStop
-    },
+    const { error } = emit('waitingUser', JSON.stringify({ id }))
+    if (error) {
+      console.error(error)
+      lock.set(false)
+    }
+
+    return stopper.onStop
   })
 }

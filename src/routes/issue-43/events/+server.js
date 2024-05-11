@@ -1,18 +1,15 @@
-import { events } from '$lib'
+import { produce } from '$lib'
 import { delay } from '$lib/delay.js'
 
-export async function POST({ request }) {
-  return events({
-    request,
-    async start({ emit }) {
-      // eslint-disable-next-line no-constant-condition
-      while (true) {
-        const { error } = emit('message', `${Date.now()}`)
-        if (error) {
-          return
-        }
-        await delay(1000)
+export async function POST() {
+  return produce(async function start({ emit }) {
+    // eslint-disable-next-line no-constant-condition
+    while (true) {
+      const { error } = emit('message', `${Date.now()}`)
+      if (error) {
+        return
       }
-    },
+      await delay(1000)
+    }
   })
 }

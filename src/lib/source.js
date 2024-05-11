@@ -1,34 +1,15 @@
 import { derived, readable } from 'svelte/store'
-import { stream } from './stream'
+import { consume } from './consume'
 import { IS_BROWSER } from './constants'
-import { createRandomValue } from './createRandomValue'
 /**
  * @template T
  * @typedef {{[K in keyof T]:T[K]} & {}} Pretty
  */
 
 /**
- * Connection established.
- * @typedef Connected
- * @property {string} resource Path to the stream.
- * @property {ReturnType<import('./stream').stream>} eventSource Stream has been established and this is information regarding the connection.
- * @property {number} connectionsCounter How many other clients are connected to the stream.
- * @property {()=>void} stopBeacon
- */
-
-/**
- * @typedef ConnectPayload
+ * @typedef ConnectablePayload
  * @property {string} resource Path to the stream.
  * @property {boolean} cache Cache connections.
- * @property {number} beacon How often to send a beacon to the server in `milliseconds`.\
- * Defaults to `5000 milliseconds`.
- *
- * > **Note**\
- * > You can set `beacon` to `0` or a negative value to disable this behavior.\
- * > Remember that if you disable this behavior but the server sent event still declares
- * > a `timeout`, the stream will close without notice after the `timeout` expires on the server.
- * @property {number} beaconVariance A variance to consider when sending `beacon`s to the server, in `milliseconds`.\
- * If the `beacon` is configured to be sent every `5000 milliseconds`, and this value is configured to `500 milliseconds`, then the actual beacon request time will vary between `4500 and 5500 milliseconds`.
  * @property {import('./types').Options} options Options for the underlying http request.
  * @property {import('./types').EventListener} onError
  * @property {import('./types').EventListener} onClose
@@ -36,7 +17,7 @@ import { createRandomValue } from './createRandomValue'
  */
 
 /**
- * @typedef {import('svelte/store').Readable<ConnectablePayload> & ConnectableAugmentations} Connectable
+ * @typedef {import('svelte/store').Readable<ConnectableStartPayload> & ConnectableAugmentations} Connectable
  */
 
 /**
@@ -54,7 +35,7 @@ import { createRandomValue } from './createRandomValue'
  */
 
 /**
- * @typedef {false | ConnectableMessage} ConnectablePayload
+ * @typedef {false | ConnectableMessage} ConnectableStartPayload
  */
 
 /**
@@ -63,20 +44,11 @@ import { createRandomValue } from './createRandomValue'
 const cachedConnectables = new Map()
 
 /**
- * @param {ConnectPayload} payload
+ * @param {ConnectablePayload} payload
  * @returns {Connectable}
  */
-function connectable({
-  resource,
-  cache,
-  beacon,
-  beaconVariance,
-  options,
-  onClose,
-  onError,
-  onOpen,
-}) {
-  const key = btoa(JSON.stringify({ resource, options, beacon }))
+function connectable({ resource, cache, options, onClose, onError, onOpen }) {
+  const key = btoa(JSON.stringify({ resource, options }))
 
   if (cache) {
     const cachedConnectable = cachedConnectables.get(key)
@@ -90,40 +62,13 @@ function connectable({
   const store = readable(
     false,
     /**
-     * @param {function(ConnectablePayload):void} set
+     * @param {function(ConnectableStartPayload):void} set
      * @returns
      */
     function start(set) {
-      /**
-       * @type {undefined | Timer}
-       */
-      let interval = undefined
-
-      const eventSource = stream({
+      const consumedStream = consume({
         resource,
-        beacon,
         options,
-        startBeacon(xSseId) {
-          if (beacon <= 0) {
-            return
-          }
-          const path = resource.toString().split('?', 2)[0] ?? '/'
-          const delayValue = createRandomValue(
-            beacon - beaconVariance,
-            beacon + beaconVariance,
-          )
-          clearInterval(interval)
-          interval = setInterval(function run() {
-            // Since Beacons don't allow for headers to be set, your instinct
-            // will probably tell you to send the `id` as a body.
-            // Don't do that, because that would mean complicating the server side `events()`
-            // function by making it async.
-            navigator.sendBeacon(`${path}?x-sse-id=${xSseId}`)
-          }, delayValue)
-          return function stop() {
-            clearInterval(interval)
-          }
-        },
         onClose(e) {
           if (cachedConnectables.has(key)) {
             cachedConnectables.delete(key)
@@ -140,7 +85,7 @@ function connectable({
       })
 
       function terminateLocal() {
-        eventSource.controller.abort()
+        consumedStream.controller.abort()
       }
 
       terminate = terminateLocal
@@ -183,9 +128,6 @@ function connectable({
  * > Connections are cached based on `from`, `beacon` and `options`.\
  * > If two sources define all three properties with the same values, then both sources will share the same connection,
  * > otherwise they will create and use two separate connections.
- * @property {number} [beacon] How often should beacons be sent to the server (in order to keep the connection alive), in `milliseconds`.
- * @property {number} [beaconVariance] A variance to consider when sending `beacon`s to the server, in `milliseconds`.\
- * If the `beacon` is configured to be sent every `5000 milliseconds`, and this value is configured to `500 milliseconds`, then the actual beacon request time will vary between `4500 and 5500 milliseconds`.
  */
 
 /**
@@ -210,15 +152,7 @@ function connectable({
  */
 export function source(
   from,
-  {
-    error,
-    close,
-    open,
-    cache = true,
-    beacon = 30000,
-    beaconVariance = 5000,
-    options = {},
-  } = {},
+  { error, close, open, cache = true, options = {} } = {},
 ) {
   if (!IS_BROWSER) {
     return {
@@ -258,8 +192,6 @@ export function source(
   const connected = connectable({
     resource: from,
     cache,
-    beacon,
-    beaconVariance,
     options,
     onClose(e) {
       if (close) {

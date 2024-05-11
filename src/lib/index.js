@@ -1,5 +1,5 @@
 import { source } from './source.js'
 import { findBeacon } from './findBeacon.js'
-import { events, extend } from './events.js'
+import { produce } from './produce.js'
 export * from './types.js'
-export { source, events, extend, findBeacon }
+export { source, produce, findBeacon }

@@ -1,6 +1,5 @@
 import { delay } from '$lib/delay.js'
-import { events, extend } from '$lib/events.js'
-import { findBeacon } from '$lib/findBeacon.js'
+import { produce } from '$lib/produce.js'
 
 /**
  * @typedef Quote
@@ -74,18 +73,9 @@ async function dumpData(lang, { emit, lock }) {
   }
 }
 
-export function POST({ request, url }) {
-  const beacon = findBeacon({ request })
-  if (beacon) {
-    console.log('Stream extended.')
-    return extend({ beacon })
-  }
-
-  return events({
-    request,
-    start(connection) {
-      const lang = url.searchParams.get('lang') || 'en'
-      return dumpData(lang, connection)
-    },
+export function POST({ url }) {
+  return produce(function start(connection) {
+    const lang = url.searchParams.get('lang') || 'en'
+    return dumpData(lang, connection)
   })
 }

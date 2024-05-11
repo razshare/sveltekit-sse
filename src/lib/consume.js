@@ -11,11 +11,9 @@ import { uuid } from './uuid'
  */
 
 /**
- * @typedef StreamPayload
+ * @typedef ConsumePayload
  * @property {string} resource
  * @property {import('./types').Options} options
- * @property {number} beacon
- * @property {IdFound} startBeacon
  * @property {import('./types').EventListener} onMessage
  * @property {import('./types').EventListener} onError
  * @property {import('./types').EventListener} onClose
@@ -48,27 +46,25 @@ const connecting = new Map()
  */
 
 /**
- * @typedef StreamConnection
+ * @typedef ConsumedStream
  * @property {AbortController} controller
  * @property {string} resource
  */
 
 /**
  *
- * @param {StreamPayload} payload
- * @returns {StreamConnection}
+ * @param {ConsumePayload} payload
+ * @returns {ConsumedStream}
  */
-export function stream({
+export function consume({
   resource,
-  beacon,
   options,
-  startBeacon,
   onMessage,
   onError,
   onClose,
   onOpen,
 }) {
-  const key = btoa(JSON.stringify({ resource, options, beacon }))
+  const key = btoa(JSON.stringify({ resource, options }))
 
   /** @type {StreamConfiguration} */
   const configuration = {
@@ -82,8 +78,6 @@ export function stream({
   let status = 500
   let statusText = 'Internal Server Error'
   let headers = new Headers()
-  /** @type {false|string} */
-  let xSseId = false
   let localAbort = false
   /** @type {false|function():void} */
   let stopBeacon = false
@@ -120,7 +114,6 @@ export function stream({
         status,
         statusText,
         headers,
-        xSseId,
         close,
       })
     }
@@ -201,14 +194,6 @@ export function stream({
         connecting.delete(key)
 
         if (ok && headers.get('content-type') === EventStreamContentType) {
-          const xSseIdLocal = headers.get('x-sse-id')
-          if (xSseIdLocal) {
-            xSseId = xSseIdLocal
-            if (startBeacon) {
-              stopBeacon = startBeacon(xSseId ?? '')
-            }
-          }
-
           for (const onOpen of configuration.onOpen) {
             onOpen({
               id: '',
@@ -219,7 +204,6 @@ export function stream({
               status,
               statusText,
               headers,
-              xSseId,
               close,
             })
           }
@@ -240,7 +224,6 @@ export function stream({
             status,
             statusText,
             headers,
-            xSseId,
             close,
           })
         }
@@ -259,7 +242,6 @@ export function stream({
             status,
             statusText,
             headers,
-            xSseId,
             close,
           })
         }
@@ -276,7 +258,6 @@ export function stream({
             status,
             statusText,
             headers,
-            xSseId,
             close,
           })
         }
