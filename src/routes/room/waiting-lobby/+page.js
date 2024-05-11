@@ -1,7 +1,7 @@
 import { catName } from '../cat-name'
-import { orPrevious, reconnectingSource } from '../sse-utils'
+import { reconnectingSource, orPrevious } from '../sse-utils'
 
-export async function load({ parent }) {
+export function load() {
   const id = catName()
 
   const connection = reconnectingSource(`/room/waiting-lobby`, {
@@ -11,5 +11,5 @@ export async function load({ parent }) {
   /** @type {import('svelte/store').Readable<import('../mock-db.server').User | null>} */
   const waitingUser = connection.select('waitingUser').json(orPrevious)
 
-  return { ...(await parent()), id, waitingUser, connection }
+  return { id, waitingUser, connection }
 }

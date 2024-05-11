@@ -1,7 +1,7 @@
 import { catName } from './cat-name'
 import { orPrevious, reconnectingSource } from './sse-utils'
 
-export async function load({ parent }) {
+export async function load() {
   const id = catName()
 
   const connection = reconnectingSource(`/room`, {
@@ -15,7 +15,6 @@ export async function load({ parent }) {
   const usersInLobby = connection.select('usersInLobby').json(orPrevious)
 
   return {
-    ...(await parent()),
     id,
     usersInRoom,
     usersInLobby,

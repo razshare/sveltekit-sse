@@ -1,7 +1,13 @@
 import { events } from '$lib'
-import { findMatchingId, lobby, updateStore } from '../mock-db.server'
+import {
+  findMatchingId,
+  lobby,
+  removeFromStore,
+  updateStore,
+} from '../mock-db.server'
+import { eventStopper } from '../sse-utils.server'
 
-export async function POST({ request }) {
+export async function POST({ route, request }) {
   /** @type {string} */
   let id
 
@@ -12,7 +18,12 @@ export async function POST({ request }) {
   return events({
     request,
     start({ emit, lock }) {
+      const stopper = eventStopper(route.id, emit, lock)
+
       updateStore(lobby, { id, approved: undefined })
+      stopper.push(function leaveLobby() {
+        removeFromStore(lobby, id)
+      })
 
       const unsub = lobby.subscribe(function notify(guests) {
         const guest = findMatchingId(guests, id)
@@ -27,9 +38,10 @@ export async function POST({ request }) {
           console.error(error)
           lock.set(false)
         } else if (guest.approved === true || guest.approved === false) {
-          lock.set(false)
+          stopper.stop()
         }
       })
+      stopper.push(unsub)
 
       const { error } = emit('waitingUser', JSON.stringify({ id }))
       if (error) {
@@ -37,14 +49,7 @@ export async function POST({ request }) {
         lock.set(false)
       }
 
-      return function cancel() {
-        unsub()
-        lobby.update(function leave(guests) {
-          return guests.filter(function notMe(guest) {
-            return guest.id !== id
-          })
-        })
-      }
+      return stopper.onStop
     },
   })
 }

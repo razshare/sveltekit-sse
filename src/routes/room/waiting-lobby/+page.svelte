@@ -19,12 +19,14 @@
 
 <p>You are {data.id}, connection status {$status}</p>
 
-{#if !$waitingUser}
+{#if $status.includes('connecting')}
   <p>Connecting...</p>
-{:else if $waitingUser.approved === false}
+{:else if $waitingUser?.approved === false}
   <p>You have been denied access to the room.</p>
-{:else}
+{:else if $status === 'connected'}
   <p>Waiting to be let into the room...</p>
+{:else}
+  <p>Disconnected.</p>
 {/if}
 
 {#if $status === 'closed'}
