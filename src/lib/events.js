@@ -263,7 +263,7 @@ function createContext() {
  * @param {ExtendPayload} payload
  * @returns {Response}
  */
-export function extend({ beacon, timeout = 7000 }) {
+export function extend({ beacon, timeout = 45_000 }) {
   const { xSseId } = beacon
   const timeoutOld = timeouts.get(xSseId)
   if (timeoutOld) {
