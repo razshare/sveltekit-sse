@@ -9,7 +9,6 @@
   }
 
   const connection = source(`/issue-43/events`, {
-    beacon: 0,
     close({ connect }) {
       playwright.state.issue43.disconnections++
       reconnect = connect
