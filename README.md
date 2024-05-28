@@ -8,7 +8,7 @@ Install with:
 npm i -D sveltekit-sse
 ```
 
-Produce your server sent events with:
+Produce your server sent events with
 
 ```js
 // src/routes/custom-event/+server.js
@@ -37,7 +37,7 @@ export function POST() {
 }
 ```
 
-and consume them on your client with:
+Consume them on your client with
 
 ```svelte
 <script>
@@ -48,6 +48,9 @@ and consume them on your client with:
 
 {$value}
 ```
+Your application will render something like this
+
+![Peek 2024-05-28 02-55](https://github.com/razshare/sveltekit-sse/assets/6891346/fd9c36eb-b9e6-4393-b768-07fabe2688bf)
 
 
 ## Locking
