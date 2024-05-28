@@ -50,7 +50,7 @@ Consume them on your client with
 ```
 Your application will render something like this
 
-![Peek 2024-05-28 02-55](https://github.com/razshare/sveltekit-sse/assets/6891346/fd9c36eb-b9e6-4393-b768-07fabe2688bf)
+![Peek 2024-05-28 03-03](https://github.com/razshare/sveltekit-sse/assets/6891346/215b0b26-fa21-4841-9b69-b28a4c1ec731)
 
 
 ## Locking
