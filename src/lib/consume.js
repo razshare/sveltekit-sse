@@ -33,11 +33,6 @@ import { uuid } from './uuid'
  */
 
 /**
- * @type {Map<string, number>}
- */
-const connecting = new Map()
-
-/**
  * @typedef StreamEvents
  * @property {Array<import('./types').EventListener>} onError
  * @property {Array<import('./types').EventListener>} onClose
@@ -64,8 +59,6 @@ export function consume({
   onClose,
   onOpen,
 }) {
-  const key = btoa(JSON.stringify({ resource, options }))
-
   /** @type {StreamEvents} */
   const events = {
     onClose: [onClose],
@@ -157,12 +150,6 @@ export function consume({
       return
     }
 
-    if (connecting.has(key)) {
-      return
-    }
-
-    connecting.set(key, Date.now())
-
     // Reset assumptions on new connections
     status = 500
     statusText = 'Internal Server Error'
@@ -183,7 +170,6 @@ export function consume({
         status = statusLocal
         statusText = statusTextLocal
         headers = headersLocal
-        connecting.delete(key)
 
         if (ok && headers.get('content-type') === EventStreamContentType) {
           for (const onOpen of events.onOpen) {
@@ -255,9 +241,7 @@ export function consume({
     })
   }
 
-  connect().then(function connected() {
-    connecting.delete(key)
-  })
+  connect()
 
   return result
 }

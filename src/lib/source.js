@@ -48,9 +48,10 @@ const cachedConnectables = new Map()
  * @returns {Connectable}
  */
 function connectable({ resource, cache, options, onClose, onError, onOpen }) {
-  const key = btoa(JSON.stringify({ resource, options }))
+  let key = ''
 
   if (cache) {
+    key = btoa(JSON.stringify({ resource, options }))
     const cachedConnectable = cachedConnectables.get(key)
     if (cachedConnectable) {
       return cachedConnectable
