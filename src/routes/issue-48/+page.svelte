@@ -1,10 +1,58 @@
 <script>
-  import { sourceSSE } from './sse'
+  import { source } from '$lib'
+  import { playwright } from '$lib/playwright/playwright'
 
-  sourceSSE('/issue-48', ['event0'])
-  sourceSSE('/issue-48', ['event0'])
+  source('/issue-48/events', {
+    cache: false,
+    open() {
+      console.log('connected')
+      playwright.state.issue48.connected++
+    },
+  })
+    .select('event0')
+    .subscribe(function watch(data) {
+      playwright.state.issue48.messages.push(data)
+      console.log('test', data)
+    })
 
-  //   setTimeout(function run() {
-  //     sourceSSE('/issue-48', ['event0'])
-  //   }, 1000)
+  source('/issue-48/events', {
+    cache: true,
+    open() {
+      console.log('connected')
+      playwright.state.issue48.connected++
+    },
+  })
+    .select('event0')
+    .subscribe(function watch(data) {
+      playwright.state.issue48.messages.push(data)
+      console.log('test', data)
+    })
+
+  source('/issue-48/events', {
+    cache: true,
+    open() {
+      console.log('connected')
+      playwright.state.issue48.connected++
+    },
+  })
+    .select('event0')
+    .subscribe(function watch(data) {
+      playwright.state.issue48.messages.push(data)
+      console.log('test', data)
+    })
+
+  setTimeout(function run() {
+    source('/issue-48/events', {
+      cache: true,
+      open() {
+        console.log('connected')
+        playwright.state.issue48.connected++
+      },
+    })
+      .select('event0')
+      .subscribe(function watch(data) {
+        playwright.state.issue48.messages.push(data)
+        console.log('test', data)
+      })
+  }, 1000)
 </script>

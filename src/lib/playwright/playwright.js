@@ -7,9 +7,16 @@ import { IS_BROWSER } from '../constants'
  */
 
 /**
+ * @typedef Issue48
+ * @property {Array<string>} messages
+ * @property {number} connected
+ */
+
+/**
  * @typedef PlaywrightState
  * @property {number} counter
  * @property {Issue43} issue43
+ * @property {Issue48} issue48
  */
 
 /** @type {PlaywrightState} */
@@ -18,6 +25,10 @@ let state = {
   issue43: {
     connections: 0,
     disconnections: 0,
+  },
+  issue48: {
+    messages: [],
+    connected: 0,
   },
 }
 

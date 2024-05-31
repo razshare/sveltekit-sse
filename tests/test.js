@@ -28,3 +28,20 @@ test('Making sure connect() and close() work properly.', async function run({
   expect(issue43.connections).toEqual(3)
   expect(issue43.disconnections).toEqual(3)
 })
+
+test('Making sure internal readable store is cached between subscribes when pointing to the same source.', async function run({
+  page,
+}) {
+  // Testing issue 43 https://github.com/razshare/sveltekit-sse/issues/43
+  await page.goto('/issue-48')
+  await delay(3500)
+  const { issue48 } = await getPlaywrightState({ page })
+  console.log(issue48)
+  expect(issue48.connected).toBe(2)
+  expect(issue48.messages.length).toBe(7)
+  expect(issue48.messages[0]).toBe('')
+  expect(issue48.messages[1]).toBe('')
+  expect(issue48.messages[2]).toBe('')
+  let time = issue48.messages[3]
+  expect(time).toBeTruthy()
+})

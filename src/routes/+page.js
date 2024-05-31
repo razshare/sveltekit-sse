@@ -5,16 +5,16 @@ export function load({ url }) {
 
   const connection = source(`/events?${searchParams}`, {
     cache: false,
-    close({ status, connect, xSseId, isLocal }) {
+    close({ status, connect, isLocal }) {
       if (isLocal) {
         return
       }
-      console.log('Closed', { status, xSseId, isLocal })
+      console.log('Closed', { status, isLocal })
       console.log('reconnecting...')
       connect()
     },
-    open({ status, xSseId, isLocal }) {
-      console.log('Opened', { status, xSseId, isLocal })
+    open({ status, isLocal }) {
+      console.log('Opened', { status, isLocal })
     },
   })
 

@@ -9,7 +9,6 @@ import { IS_BROWSER } from './constants'
 /**
  * @typedef ConnectablePayload
  * @property {string} resource Path to the stream.
- * @property {boolean} cache Cache connections.
  * @property {import('./types').Options} options Options for the underlying http request.
  * @property {import('./types').EventListener} onError
  * @property {import('./types').EventListener} onClose
@@ -39,25 +38,15 @@ import { IS_BROWSER } from './constants'
  */
 
 /**
- * @type {Map<string, Connectable>}
+ * @type {Map<string, Source>}
  */
-const cachedConnectables = new Map()
+const cachedSources = new Map()
 
 /**
  * @param {ConnectablePayload} payload
  * @returns {Connectable}
  */
-function connectable({ resource, cache, options, onClose, onError, onOpen }) {
-  let key = ''
-
-  if (cache) {
-    key = btoa(JSON.stringify({ resource, options }))
-    const cachedConnectable = cachedConnectables.get(key)
-    if (cachedConnectable) {
-      return cachedConnectable
-    }
-  }
-
+function connectable({ resource, options, onClose, onError, onOpen }) {
   let terminate = function noop() {}
 
   const store = readable(
@@ -71,9 +60,6 @@ function connectable({ resource, cache, options, onClose, onError, onOpen }) {
         resource,
         options,
         onClose(e) {
-          if (cachedConnectables.has(key)) {
-            cachedConnectables.delete(key)
-          }
           if (onClose) {
             onClose(e)
           }
@@ -105,10 +91,6 @@ function connectable({ resource, cache, options, onClose, onError, onOpen }) {
     },
   }
 
-  if (cache) {
-    cachedConnectables.set(key, connectable)
-  }
-
   return connectable
 }
 
@@ -132,6 +114,48 @@ function connectable({ resource, cache, options, onClose, onError, onOpen }) {
  */
 
 /**
+ * @template [T = any]
+ * @callback SourceSelect
+ * @param {string} eventName Name of the event.
+ * @returns {import('svelte/store').Readable<string>&SourceSelected<T>}
+ */
+
+/**
+ * @template [T = any]
+ * @callback Transformer
+ * @param {string} value
+ * @return {T}
+ */
+
+/**
+ * @template [T = any]
+ * @callback Jsonifier
+ * @param {import('./types').JsonPredicate} [or] Manage the value when the json parsing fails.\
+ * Whatever this function returns will become the new value of the store.
+ * @returns {import('svelte/store').Readable<null|T>}
+ */
+
+/**
+ * @template [T = any]
+ * @callback SourceSelectedTransform
+ * @param {Transformer<T>} transformer
+ */
+
+/**
+ * @template [T = any]
+ * @typedef SourceSelected
+ * @property {SourceSelectedTransform<T>} transform Transform the data into a custom shape.
+ * @property {Jsonifier<T>} json Parse the data as json.
+ */
+
+/**
+ * @template [T = any]
+ * @typedef Source
+ * @property {function():void} close
+ * @property {SourceSelect} select Select an event from the stream.
+ */
+
+/**
  * Source a server sent event.
  *
  * Multiple sources may share the same underlying connection if they use the same path (`from`).
@@ -146,9 +170,10 @@ function connectable({ resource, cache, options, onClose, onError, onOpen }) {
  * >  }
  * > })
  * > ```
+ * @template [T = any]
  * @param {string} from Path to the stream.
  * @param {SourceConfiguration} [configuration]
- * @returns
+ * @returns {Source<T>}
  */
 export function source(
   from,
@@ -157,29 +182,14 @@ export function source(
   if (!IS_BROWSER) {
     return {
       close() {},
-      /**
-       *  Select an event from the stream.
-       * @param {string} eventName Name of the event.
-       * @returns
-       */
       // eslint-disable-next-line @typescript-eslint/no-unused-vars
       select(eventName) {
         const storeLocal = readable('')
         return {
           ...storeLocal,
-          /**
-           * @template [T = any]
-           * @param {(value:string) => T} transformer
-           * @returns
-           */
           transform(transformer) {
             return derived(storeLocal, transformer)
           },
-          /**
-           * @template [T = any]
-           * @param {import('./types').JsonPredicate} [or]
-           * @returns {import('svelte/store').Readable<null|T>}
-           */
           // eslint-disable-next-line @typescript-eslint/no-unused-vars
           json(or) {
             return readable(null)
@@ -189,9 +199,17 @@ export function source(
     }
   }
 
+  let key = ''
+  if (cache) {
+    key = btoa(JSON.stringify({ from, options }))
+    const cachedSource = cachedSources.get(key)
+    if (cachedSource) {
+      return cachedSource
+    }
+  }
+
   const connected = connectable({
     resource: from,
-    cache,
     options,
     onClose(e) {
       if (close) {
@@ -210,15 +228,13 @@ export function source(
     },
   })
 
-  return {
+  /** @type {Map<string,import('svelte/store').Readable<string>>} */
+  let storeLocalsCache = new Map()
+  /** @type {Source<T>} */
+  let source = {
     close() {
       connected.close()
     },
-    /**
-     *  Select an event from the stream.
-     * @param {string} eventName Name of the event.
-     * @returns
-     */
     select(eventName) {
       if (eventName.includes('\n')) {
         throw new Error(
@@ -232,21 +248,30 @@ export function source(
         )
       }
 
-      const storeLocal = readable('', function start(set) {
-        const unsubscribe = connected.subscribe(function watch(value) {
-          if (value && value.event === eventName) {
-            set(value.data)
+      if (!storeLocalsCache.has(eventName)) {
+        const storeLocal = readable('', function start(set) {
+          const unsubscribe = connected.subscribe(function watch(value) {
+            if (value && value.event === eventName) {
+              set(value.data)
+            }
+          })
+
+          return function stop() {
+            cachedSources.delete(key)
+            connected.close()
+            unsubscribe()
           }
         })
 
-        return function stop() {
-          connected.close()
-          unsubscribe()
-        }
-      })
+        storeLocalsCache.set(eventName, storeLocal)
+      }
+
+      /** @type {import('svelte/store').Readable<string>} */
+      // @ts-ignore
+      const storeLocalCached = storeLocalsCache.get(eventName)
 
       return {
-        ...storeLocal,
+        ...storeLocalCached,
         /**
          * @template [T = any]
          * @param {(value:string) => T} transformer
@@ -274,19 +299,14 @@ export function source(
               }
             },
           )
-          // return derived(storeLocal, transformer)
         },
-        /**
-         * @template [T = any]
-         * @param {import('./types').JsonPredicate} [or]
-         * @returns {import('svelte/store').Readable<null|T>}
-         */
         json(or) {
           /**
            * @type {null|T}
            */
           let previous = null
-          return derived(storeLocal, function convert(raw) {
+          // @ts-ignore
+          return derived(storeLocalCached, function convert(raw) {
             try {
               previous = JSON.parse(raw)
               return previous
@@ -305,4 +325,8 @@ export function source(
       }
     },
   }
+  if (key !== '') {
+    cachedSources.set(key, source)
+  }
+  return source
 }
