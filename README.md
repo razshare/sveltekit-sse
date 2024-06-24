@@ -317,7 +317,7 @@ Whatever this function returns will become the new value of the store, in the ex
   In a distributed system this mapping would have to happen externally, see next question.
 
 - Is this distributed systems friendly?\
-  Yes - see https://github.com/razshare/sveltekit-sse/issues/49 , https://github.com/razshare/sveltekit-sse/issues/34 and https://github.com/razshare/sveltekit-sse/issues/16 .
+  Yes - see https://github.com/razshare/sveltekit-sse/issues/50, https://github.com/razshare/sveltekit-sse/issues/49 , https://github.com/razshare/sveltekit-sse/issues/34 and https://github.com/razshare/sveltekit-sse/issues/16 .
   
   There is no special setup required for distributed systems for this library specifically, but you should always remember to avoid saving state directly on nodes as that memory is [transient](https://en.wikipedia.org/wiki/Transient_(computer_programming)).
   
