@@ -274,7 +274,7 @@ Whatever this function returns will become the new value of the store, in the ex
   You will have to identify users using sessions (or some equivalent mechanism, for example actual database-backed accounts) and map them to references of their respective emitters.\
   For example using a global map
   ```js
-  // lib/clients.js
+  // src/lib/clients.js
   /** @type {Map<string,(eventName:string,data:string)=>import('sveltekit-sse').Unsafe<void,Error>>} */
   export const clients = new Map()
   ```
