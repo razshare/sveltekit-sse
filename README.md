@@ -267,6 +267,79 @@ You can parse incoming messages from the source as json using `source::select::j
 When a parsing error occurs, `or` is invoked.\
 Whatever this function returns will become the new value of the store, in the example above `previous`, which is the previous (valid) value of the store.
 
+## FAQ
+
+- How can I produce data from third party sources?\
+  This library doesn't provide an direct answer to that question, but the road to an answer is short.\
+  You will have to identify users using either accounts or anonymous session and map them to references of their respective emitters.\
+  For example using a global map
+  ```js
+  // lib/clients.js
+  /** @type {Map<string,(eventName:string,data:string)=>import('sveltekit-sse').Unsafe<void,Error>>} */
+  export const clients = new Map()
+  ```
+  ```js
+  // src/routes/events/+server.js
+  import { clients } from '$lib/clients'
+
+  export function POST({ request }) {
+    return produce(
+      function start({ emit }) {
+        const sessionId = request.headers.get('session-id') ?? ''
+        if (!sessionId) {
+          return function stop() {
+            console.error('Client session id not found.')
+          }
+        }
+        // Map the session id to an emitter.
+        // This will also indicate to you that the client is "online".
+        clients.set(sessionId, emit)
+      },
+      {
+        // Client goes "offline", so remove the entry.
+        stop() {
+          const sessionId = request.headers.get('session-id') ?? ''
+          if (!sessionId) {
+            return
+          }
+          clients.delete(sessionId)
+        },
+      },
+    )
+  }
+  ```
+  Then you can access any of the clients' emitters from your third party data source, external to the original _POST_ method, as long as you have their session id.
+  ```js
+  // some-file.js
+  import { clients } from '$lib/clients'
+  clients.get('some-session-id').emit('message', 'hello')
+  ```
+  In a distributed system this mapping would have to happen externally, see next question.
+
+- Is this distributed systems friendly?\
+  Yes - see https://github.com/razshare/sveltekit-sse/issues/49 , https://github.com/razshare/sveltekit-sse/issues/34 and https://github.com/razshare/sveltekit-sse/issues/16 .
+  
+  There is no special setup required for distributed systems for this library specifically, but you should always remember to avoid saving state directly on nodes as that memory is [transient](https://en.wikipedia.org/wiki/Transient_(computer_programming)).
+  
+  
+  To solve the transient memory issue you will need to abstract away the mapping between sessions and emitters described above.\
+  For example you could use a [DBMS](https://en.wikipedia.org/wiki/Database), such as Postgre, that can emit events, then you just forward those events to your clients.
+
+  Here's an example using [pg-listen](https://github.com/andywer/pg-listen)
+
+  ```js
+  import { clients } from '$lib/clients'
+  import createSubscriber from "pg-listen"
+  import { databaseURL } from "./config"
+
+  // Accepts the same connection config object that the "pg" package would take
+  const subscriber = createSubscriber({ connectionString: databaseURL })
+
+  subscriber.notifications.on("my-channel", (payload) => {
+    clients.get('some-session-id').emit('my-channel', payload.message)
+  })
+  ```
+
 ## Other notes
 
 > [!NOTE]
