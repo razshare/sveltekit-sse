@@ -340,6 +340,8 @@ Whatever this function returns will become the new value of the store, in the ex
   })
   ```
 
+  There's also this [guide on how to use Postgre Events](https://edernegrete.medium.com/psql-event-triggers-in-node-js-ec27a0ba9baa), which may be useful to you.
+
 ## Other notes
 
 > [!NOTE]
