@@ -45,3 +45,13 @@ test('Making sure internal readable store is cached between subscribes when poin
   let time = issue48.messages[3]
   expect(time).toBeTruthy()
 })
+
+test('Making sure GET producers and GET sources work properly.', async function run({
+  page,
+}) {
+  // Testing issue 55 https://github.com/razshare/sveltekit-sse/issues/55
+  await page.goto('/issue-55')
+  await delay(3500)
+  const { issue55 } = await getPlaywrightState({ page })
+  expect(issue55.messages.length).toBeGreaterThanOrEqual(3)
+})

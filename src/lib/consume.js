@@ -159,8 +159,8 @@ export function consume({
 
     await fetchEventSource(`${resource}`, {
       openWhenHidden,
-      ...rest,
       method: 'POST',
+      ...rest,
       async onopen({
         headers: headersLocal,
         status: statusLocal,
