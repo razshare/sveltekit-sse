@@ -1,50 +1,15 @@
 import { derived, readable } from 'svelte/store'
 import { consume } from './consume'
 import { IS_BROWSER } from './constants'
-/**
- * @template T
- * @typedef {{[K in keyof T]:T[K]} & {}} Pretty
- */
 
 /**
- * @typedef ConnectablePayload
- * @property {string} resource Path to the stream.
- * @property {import('./types').Options} options Options for the underlying http request.
- * @property {import('./types').EventListener} onError
- * @property {import('./types').EventListener} onClose
- * @property {import('./types').EventListener} onOpen
- */
-
-/**
- * @typedef {import('svelte/store').Readable<ConnectableStartPayload> & ConnectableAugmentations} Connectable
- */
-
-/**
- * A message from the currently connected source.
- * @typedef ConnectableMessage
- * @property {string} id Message identifier.
- * @property {string} event Event name.
- * @property {string} data Event data.
- */
-
-/**
- * Connectable features.
- * @typedef ConnectableAugmentations
- * @property {function():void} close Close the current connection.
- */
-
-/**
- * @typedef {false | ConnectableMessage} ConnectableStartPayload
- */
-
-/**
- * @type {Map<string, Source>}
+ * @type {Map<string, import('./types').Source>}
  */
 const cachedSources = new Map()
 
 /**
- * @param {ConnectablePayload} payload
- * @returns {Connectable}
+ * @param {import('./types').ConnectablePayload} payload
+ * @returns {import('./types').Connectable}
  */
 function connectable({ resource, options, onClose, onError, onOpen }) {
   let terminate = function noop() {}
@@ -52,7 +17,7 @@ function connectable({ resource, options, onClose, onError, onOpen }) {
   const store = readable(
     false,
     /**
-     * @param {function(ConnectableStartPayload):void} set
+     * @param {function(import('./types').ConnectableStartPayload):void} set
      * @returns
      */
     function start(set) {
@@ -82,7 +47,7 @@ function connectable({ resource, options, onClose, onError, onOpen }) {
   )
 
   /**
-   * @type {Connectable}
+   * @type {import('./types').Connectable}
    */
   const connectable = {
     ...store,
@@ -93,67 +58,6 @@ function connectable({ resource, options, onClose, onError, onOpen }) {
 
   return connectable
 }
-
-/**
- * Consume a server sent event as a readable store.
- *
- * > **Note**\
- * > Calling this multiple times using the same `resource` string will not
- * > create multiple streams, instead the same stream will be reused for all exposed
- * > events on the given `resource`.
- * @typedef SourceConfiguration
- * @property {import('./types').EventListener} [close] Do something whenever the connection closes.
- * @property {import('./types').EventListener} [open] Do something whenever the connection opens.
- * @property {import('./types').EventListener} [error] Do something whenever there are errors.
- * @property {import('./types').Options} [options] Options for the underlying http request.
- * @property {boolean} [cache] Wether or not to cache connections, defaults to `true`.
- * > **Note**\
- * > Connections are cached based on `from` and `options`.\
- * > If two sources define all three properties with the same values, then both sources will share the same connection,
- * > otherwise they will create and use two separate connections.
- */
-
-/**
- * @template [T = any]
- * @callback SourceSelect
- * @param {string} eventName Name of the event.
- * @returns {import('svelte/store').Readable<string>&SourceSelected<T>}
- */
-
-/**
- * @template [T = any]
- * @callback Transformer
- * @param {string} value
- * @return {T}
- */
-
-/**
- * @template [T = any]
- * @callback Jsonifier
- * @param {import('./types').JsonPredicate} [or] Manage the value when the json parsing fails.\
- * Whatever this function returns will become the new value of the store.
- * @returns {import('svelte/store').Readable<null|T>}
- */
-
-/**
- * @template [T = any]
- * @callback SourceSelectedTransform
- * @param {Transformer<T>} transformer
- */
-
-/**
- * @template [T = any]
- * @typedef SourceSelected
- * @property {SourceSelectedTransform<T>} transform Transform the data into a custom shape.
- * @property {Jsonifier<T>} json Parse the data as json.
- */
-
-/**
- * @template [T = any]
- * @typedef Source
- * @property {function():void} close
- * @property {SourceSelect} select Select an event from the stream.
- */
 
 /**
  * Source a server sent event.
@@ -172,8 +76,8 @@ function connectable({ resource, options, onClose, onError, onOpen }) {
  * > ```
  * @template [T = any]
  * @param {string} from Path to the stream.
- * @param {SourceConfiguration} [configuration]
- * @returns {Source<T>}
+ * @param {import('./types').SourceConfiguration} [configuration]
+ * @returns {import('./types').Source<T>}
  */
 export function source(
   from,
@@ -230,7 +134,7 @@ export function source(
 
   /** @type {Map<string,import('svelte/store').Readable<string>>} */
   let storeLocalsCache = new Map()
-  /** @type {Source<T>} */
+  /** @type {import('./types').Source<T>} */
   let source = {
     close() {
       connected.close()

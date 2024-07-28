@@ -6,50 +6,9 @@ import { IS_BROWSER } from './constants'
 import { uuid } from './uuid'
 
 /**
- * @callback IdFound
- * @param {string} id
- */
-
-/**
- * @typedef ConsumePayload
- * @property {string} resource
- * @property {import('./types').Options} options
- * @property {import('./types').EventListener} onMessage
- * @property {import('./types').EventListener} onError
- * @property {import('./types').EventListener} onClose
- * @property {import('./types').EventListener} onOpen
- */
-
-/**
- * @typedef SendErrorPayload
- * @property {Error} [error]
- * @property {boolean} local
- */
-
-/**
- * @typedef SendClosePayload
- * @property {Error} [error]
- * @property {boolean} local
- */
-
-/**
- * @typedef StreamEvents
- * @property {Array<import('./types').EventListener>} onError
- * @property {Array<import('./types').EventListener>} onClose
- * @property {Array<import('./types').EventListener>} onMessage
- * @property {Array<import('./types').EventListener>} onOpen
- */
-
-/**
- * @typedef ConsumedStream
- * @property {AbortController} controller
- * @property {string} resource
- */
-
-/**
  *
- * @param {ConsumePayload} payload
- * @returns {ConsumedStream}
+ * @param {import('./types').ConsumePayload} payload
+ * @returns {import('./types').ConsumedStream}
  */
 export function consume({
   resource,
@@ -59,7 +18,7 @@ export function consume({
   onClose,
   onOpen,
 }) {
-  /** @type {StreamEvents} */
+  /** @type {import('./types').StreamEvents} */
   const events = {
     onClose: [onClose],
     onError: [onError],

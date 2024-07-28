@@ -3,14 +3,8 @@ import { ok } from './ok'
 import { error } from './error'
 
 /**
- * @typedef CreateEmitterPayload
- * @property {ReadableStreamDefaultController} controller
- * @property {{connected:boolean}} context
- */
-
-/**
  *
- * @param {CreateEmitterPayload} payload
+ * @param {import('./types').CreateEmitterPayload} payload
  * @returns {import('./types').EmitterOfManyEvents}
  */
 function createEmitter({ controller, context }) {
@@ -56,24 +50,8 @@ function createEmitter({ controller, context }) {
 }
 
 /**
- * @typedef StreamContext
- * @property {boolean} connected
- */
-
-/**
- * @typedef ProducePayload
- * @property {Start} start
- * @property {number} [ping] The server will ping the client every `interval` milliseconds to check if it's still connected.\
- * If the client has disconnected, the stream will be un`locked` and the connection will terminate.\
- * Defaults to `30_000` milliseconds (`30` seconds).
- * @property {import('svelte/store').Writable<boolean>} lock
- * @property {StreamContext} context
- * @property {Stop} [stop]
- */
-
-/**
  *
- * @param {ProducePayload} payload
+ * @param {import('./types').ProducePayload} payload
  * @returns
  */
 function produceStream({ start, lock, context, stop, ping = 30_000 }) {
@@ -136,40 +114,8 @@ function produceStream({ start, lock, context, stop, ping = 30_000 }) {
 }
 
 /**
- * @callback OnCancel
- * @param {UnderlyingDefaultSource<string>} stream
- * @returns {void|PromiseLike<void>}
- */
-
-/**
- * @callback Start
- * @param {import('./types').Connection} payload
- * @returns {void|Stop|PromiseLike<void>|PromiseLike<Stop>}
- */
-
-/**
- * @callback Stop
- * @param {UnderlyingDefaultSource<string>} stream
- * @returns {void|PromiseLike<void>}
- */
-
-/**
- * test
- * @typedef ProduceOptions
- * @property {Record<string, string>} [headers]
- * @property {number} [ping] The server will ping the client every `interval` milliseconds to check if it's still connected.\
- * If the client has disconnected, the stream will be un`locked` and the connection will terminate.\
- * Defaults to `30_000` milliseconds (`30` seconds).
- * @property {Stop} [stop] Do something when the stream is stopped.\
- * The following qualify as "stopped"
- * - Calling `.cancel` on the underlying `ReadableStream`
- * - Calling `lock.set(false)`
- * - Client disconnected
- */
-
-/**
  *
- * @returns {StreamContext}
+ * @returns {import('./types').StreamContext}
  */
 function createContext() {
   return { connected: false }
@@ -177,7 +123,7 @@ function createContext() {
 
 /**
  * Create one stream and emit multiple server sent events.
- * @param {Start} start The stream has started, you can start emitting events.
+ * @param {import('./types').Start} start The stream has started, you can start emitting events.
  * > ## Example
  * > ```js
  * > export function POST() {
@@ -200,7 +146,7 @@ function createContext() {
  * >   })
  * > }
  * > ```
- * @param {ProduceOptions} options
+ * @param {import('./types').ProduceOptions} options
  */
 export function produce(start, { stop, headers, ping = 30_000 } = {}) {
   const context = createContext()
