@@ -5,7 +5,7 @@ import { error } from './error'
 /**
  *
  * @param {import('./types.internal').CreateEmitterPayload} payload
- * @returns {import('./types.external').EmitterOfManyEvents}
+ * @returns {import('./types.external').Emitter}
  */
 function createEmitter({ controller, context }) {
   let id = 1

@@ -51,7 +51,7 @@ export {}
  */
 
 /**
- * @typedef {(eventName:string,data:string)=>import('./types.external').Unsafe<void>} EmitterOfManyEvents
+ * @typedef {(eventName:string,data:string)=>import('./types.external').Unsafe<void>} Emitter
  */
 
 /**
