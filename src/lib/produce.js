@@ -4,8 +4,8 @@ import { error } from './error'
 
 /**
  *
- * @param {import('./types').CreateEmitterPayload} payload
- * @returns {import('./types').EmitterOfManyEvents}
+ * @param {import('./types.internal').CreateEmitterPayload} payload
+ * @returns {import('./types.external').EmitterOfManyEvents}
  */
 function createEmitter({ controller, context }) {
   let id = 1
@@ -51,7 +51,7 @@ function createEmitter({ controller, context }) {
 
 /**
  *
- * @param {import('./types').ProducePayload} payload
+ * @param {import('./types.internal').ProduceStreamPayload} payload
  * @returns
  */
 function produceStream({ start, lock, context, stop, ping = 30_000 }) {
@@ -115,7 +115,7 @@ function produceStream({ start, lock, context, stop, ping = 30_000 }) {
 
 /**
  *
- * @returns {import('./types').StreamContext}
+ * @returns {import('./types.internal').StreamContext}
  */
 function createContext() {
   return { connected: false }
@@ -123,7 +123,7 @@ function createContext() {
 
 /**
  * Create one stream and emit multiple server sent events.
- * @param {import('./types').Start} start The stream has started, you can start emitting events.
+ * @param {import('./types.external').Start} start The stream has started, you can start emitting events.
  * > ## Example
  * > ```js
  * > export function POST() {
@@ -146,7 +146,7 @@ function createContext() {
  * >   })
  * > }
  * > ```
- * @param {import('./types').ProduceOptions} options
+ * @param {import('./types.external').ProducePayload} options
  */
 export function produce(start, { stop, headers, ping = 30_000 } = {}) {
   const context = createContext()

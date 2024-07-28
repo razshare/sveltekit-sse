@@ -47,16 +47,16 @@ export {}
  */
 
 /**
- * @typedef {(event:import('./types').Event)=>void} EventListener
+ * @typedef {(event:import('./types.external').Event)=>void} EventListener
  */
 
 /**
- * @typedef {(eventName:string,data:string)=>import('./types').Unsafe<void>} EmitterOfManyEvents
+ * @typedef {(eventName:string,data:string)=>import('./types.external').Unsafe<void>} EmitterOfManyEvents
  */
 
 /**
  * @typedef Connection
- * @property {(eventName:string,data:string)=>import('./types').Unsafe<void,Error>} emit Emit events to the client.\
+ * @property {(eventName:string,data:string)=>import('./types.external').Unsafe<void,Error>} emit Emit events to the client.\
  * The result wrapper may contain an error
  * ## Example
  * ```js
@@ -108,37 +108,6 @@ export {}
 // Source.
 
 /**
- * @typedef ConnectablePayload
- * @property {string} resource Path to the stream.
- * @property {import('./types').Options} options Options for the underlying http request.
- * @property {import('./types').EventListener} onError
- * @property {import('./types').EventListener} onClose
- * @property {import('./types').EventListener} onOpen
- */
-
-/**
- * @typedef {import('svelte/store').Readable<ConnectableStartPayload> & ConnectableAugmentations} Connectable
- */
-
-/**
- * A message from the currently connected source.
- * @typedef ConnectableMessage
- * @property {string} id Message identifier.
- * @property {string} event Event name.
- * @property {string} data Event data.
- */
-
-/**
- * Connectable features.
- * @typedef ConnectableAugmentations
- * @property {function():void} close Close the current connection.
- */
-
-/**
- * @typedef {false | ConnectableMessage} ConnectableStartPayload
- */
-
-/**
  * Consume a server sent event as a readable store.
  *
  * > **Note**\
@@ -146,10 +115,10 @@ export {}
  * > create multiple streams, instead the same stream will be reused for all exposed
  * > events on the given `resource`.
  * @typedef SourceConfiguration
- * @property {import('./types').EventListener} [close] Do something whenever the connection closes.
- * @property {import('./types').EventListener} [open] Do something whenever the connection opens.
- * @property {import('./types').EventListener} [error] Do something whenever there are errors.
- * @property {import('./types').Options} [options] Options for the underlying http request.
+ * @property {import('./types.external').EventListener} [close] Do something whenever the connection closes.
+ * @property {import('./types.external').EventListener} [open] Do something whenever the connection opens.
+ * @property {import('./types.external').EventListener} [error] Do something whenever there are errors.
+ * @property {import('./types.external').Options} [options] Options for the underlying http request.
  * @property {boolean} [cache] Wether or not to cache connections, defaults to `true`.
  * > **Note**\
  * > Connections are cached based on `from` and `options`.\
@@ -174,7 +143,7 @@ export {}
 /**
  * @template [T = any]
  * @callback Jsonifier
- * @param {import('./types').JsonPredicate} [or] Manage the value when the json parsing fails.\
+ * @param {import('./types.external').JsonPredicate} [or] Manage the value when the json parsing fails.\
  * Whatever this function returns will become the new value of the store.
  * @returns {import('svelte/store').Readable<null|T>}
  */
@@ -202,17 +171,6 @@ export {}
 // Produce.
 
 /**
- * @typedef CreateEmitterPayload
- * @property {ReadableStreamDefaultController} controller
- * @property {{connected:boolean}} context
- */
-
-/**
- * @typedef StreamContext
- * @property {boolean} connected
- */
-
-/**
  * @callback OnCancel
  * @param {UnderlyingDefaultSource<string>} stream
  * @returns {void|PromiseLike<void>}
@@ -220,7 +178,7 @@ export {}
 
 /**
  * @callback Start
- * @param {import('./types').Connection} payload
+ * @param {import('./types.external').Connection} payload
  * @returns {void|Stop|PromiseLike<void>|PromiseLike<Stop>}
  */
 
@@ -232,23 +190,11 @@ export {}
 
 /**
  * @typedef ProducePayload
- * @property {import('./types').Start} start
+ * @property {Record<string, string>} [headers] Response headers.
  * @property {number} [ping] The server will ping the client every `interval` milliseconds to check if it's still connected.\
  * If the client has disconnected, the stream will be un`locked` and the connection will terminate.\
  * Defaults to `30_000` milliseconds (`30` seconds).
- * @property {import('svelte/store').Writable<boolean>} lock
- * @property {import('./types').StreamContext} context
- * @property {import('./types').Stop} [stop]
- */
-
-/**
- * test
- * @typedef ProduceOptions
- * @property {Record<string, string>} [headers]
- * @property {number} [ping] The server will ping the client every `interval` milliseconds to check if it's still connected.\
- * If the client has disconnected, the stream will be un`locked` and the connection will terminate.\
- * Defaults to `30_000` milliseconds (`30` seconds).
- * @property {import('./types').Stop} [stop] Do something when the stream is stopped.\
+ * @property {import('./types.external').Stop} [stop] Do something when the stream is stopped.\
  * The following qualify as "stopped"
  * - Calling `.cancel` on the underlying `ReadableStream`
  * - Calling `lock.set(false)`
@@ -256,44 +202,3 @@ export {}
  */
 
 // Consume.
-
-/**
- * @callback IdFound
- * @param {string} id
- */
-
-/**
- * @typedef ConsumePayload
- * @property {string} resource
- * @property {import('./types').Options} options
- * @property {import('./types').EventListener} onMessage
- * @property {import('./types').EventListener} onError
- * @property {import('./types').EventListener} onClose
- * @property {import('./types').EventListener} onOpen
- */
-
-/**
- * @typedef SendErrorPayload
- * @property {Error} [error]
- * @property {boolean} local
- */
-
-/**
- * @typedef SendClosePayload
- * @property {Error} [error]
- * @property {boolean} local
- */
-
-/**
- * @typedef StreamEvents
- * @property {Array<import('./types').EventListener>} onError
- * @property {Array<import('./types').EventListener>} onClose
- * @property {Array<import('./types').EventListener>} onMessage
- * @property {Array<import('./types').EventListener>} onOpen
- */
-
-/**
- * @typedef ConsumedStream
- * @property {AbortController} controller
- * @property {string} resource
- */

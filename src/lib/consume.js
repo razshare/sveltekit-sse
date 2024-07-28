@@ -7,8 +7,8 @@ import { uuid } from './uuid'
 
 /**
  *
- * @param {import('./types').ConsumePayload} payload
- * @returns {import('./types').ConsumedStream}
+ * @param {import('./types.internal').ConsumePayload} payload
+ * @returns {import('./types.internal').ConsumedStream}
  */
 export function consume({
   resource,
@@ -18,7 +18,7 @@ export function consume({
   onClose,
   onOpen,
 }) {
-  /** @type {import('./types').StreamEvents} */
+  /** @type {import('./types.internal').StreamEvents} */
   const events = {
     onClose: [onClose],
     onError: [onError],

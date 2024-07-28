@@ -3,13 +3,13 @@ import { consume } from './consume'
 import { IS_BROWSER } from './constants'
 
 /**
- * @type {Map<string, import('./types').Source>}
+ * @type {Map<string, import('./types.external').Source>}
  */
 const cachedSources = new Map()
 
 /**
- * @param {import('./types').ConnectablePayload} payload
- * @returns {import('./types').Connectable}
+ * @param {import('./types.internal').ConnectablePayload} payload
+ * @returns {import('./types.internal').Connectable}
  */
 function connectable({ resource, options, onClose, onError, onOpen }) {
   let terminate = function noop() {}
@@ -17,7 +17,7 @@ function connectable({ resource, options, onClose, onError, onOpen }) {
   const store = readable(
     false,
     /**
-     * @param {function(import('./types').ConnectableStartPayload):void} set
+     * @param {function(import('./types.internal').ConnectableStartPayload):void} set
      * @returns
      */
     function start(set) {
@@ -47,7 +47,7 @@ function connectable({ resource, options, onClose, onError, onOpen }) {
   )
 
   /**
-   * @type {import('./types').Connectable}
+   * @type {import('./types.internal').Connectable}
    */
   const connectable = {
     ...store,
@@ -76,8 +76,8 @@ function connectable({ resource, options, onClose, onError, onOpen }) {
  * > ```
  * @template [T = any]
  * @param {string} from Path to the stream.
- * @param {import('./types').SourceConfiguration} [configuration]
- * @returns {import('./types').Source<T>}
+ * @param {import('./types.external').SourceConfiguration} [configuration]
+ * @returns {import('./types.external').Source<T>}
  */
 export function source(
   from,
@@ -134,7 +134,7 @@ export function source(
 
   /** @type {Map<string,import('svelte/store').Readable<string>>} */
   let storeLocalsCache = new Map()
-  /** @type {import('./types').Source<T>} */
+  /** @type {import('./types.external').Source<T>} */
   let source = {
     close() {
       connected.close()
