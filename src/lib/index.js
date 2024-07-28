@@ -1,4 +1,4 @@
-import { source } from './source'
-import { produce } from './produce'
-export * from './types'
+import { source } from './source.js'
+import { produce } from './produce.js'
+export * from './types.js'
 export { source, produce }
