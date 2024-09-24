@@ -152,6 +152,7 @@ export {}
  * @template [T = any]
  * @callback SourceSelectedTransform
  * @param {Transformer<T>} transformer
+ * @returns {import('svelte/store').Readable<T>}
  */
 
 /**
