@@ -74,10 +74,9 @@ function connectable({ resource, options, onClose, onError, onOpen }) {
  * >  }
  * > })
  * > ```
- * @template [T = any]
  * @param {string} from Path to the stream.
  * @param {import('./types.external').SourceConfiguration} [configuration]
- * @returns {import('./types.external').Source<T>}
+ * @returns {import('./types.external').Source}
  */
 export function source(
   from,
@@ -86,20 +85,36 @@ export function source(
   if (!IS_BROWSER) {
     return {
       close() {},
+      // @ts-ignore
       // eslint-disable-next-line @typescript-eslint/no-unused-vars
       select(eventName) {
         const storeLocal = readable('')
         return {
           ...storeLocal,
-          transform(transformer) {
-            return derived(storeLocal, transformer)
-          },
           // eslint-disable-next-line @typescript-eslint/no-unused-vars
           json(or) {
             return readable(null)
           },
+          transform(transformer) {
+            return derived(storeLocal, transformer)
+          },
         }
       },
+
+      // eslint-disable-next-line @typescript-eslint/no-unused-vars
+      // select(eventName) {
+      //   const storeLocal = readable('')
+      //   return {
+      //     ...storeLocal,
+      //     transform(transformer) {
+      //       return derived(storeLocal, transformer)
+      //     },
+      //     // eslint-disable-next-line @typescript-eslint/no-unused-vars
+      //     json(or) {
+      //       return readable(null)
+      //     },
+      //   }
+      // },
     }
   }
 
@@ -133,8 +148,10 @@ export function source(
   })
 
   /** @type {Map<string,import('svelte/store').Readable<string>>} */
+  // @ts-ignore
   let storeLocalsCache = new Map()
-  /** @type {import('./types.external').Source<T>} */
+
+  /** @type {import('./types.external').Source} */
   let source = {
     close() {
       connected.close()
@@ -176,53 +193,42 @@ export function source(
 
       return {
         ...storeLocalCached,
-        /**
-         * @template [T = any]
-         * @param {(value:string) => T} transformer
-         * @returns
-         */
-        transform(transformer) {
-          return readable(
-            null,
-            /**
-             *
-             * @param {function(null|T):void} set
-             * @returns
-             */
-            function start(set) {
-              const unsubscribe = connected.subscribe(function watch(value) {
-                if (value && value.event === eventName) {
-                  const valueLocal = transformer(value.data)
-                  set(valueLocal)
-                }
-              })
-
-              return function stop() {
-                connected.close()
-                unsubscribe()
-              }
-            },
-          )
-        },
         json(or) {
-          /**
-           * @type {null|T}
-           */
-          let previous = null
           // @ts-ignore
-          return derived(storeLocalCached, function convert(raw) {
+          let previous = null
+          let result = derived(storeLocalCached, function convert(raw) {
             try {
               previous = JSON.parse(raw)
               return previous
             } catch (e) {
               if (or) {
                 return or({
-                  previous,
-                  raw: raw,
                   // @ts-ignore
                   error: e,
+                  raw: raw,
+                  // @ts-ignore
+                  previous,
                 })
               }
+            }
+          })
+          return result
+        },
+        transform(transformer) {
+          /** @type {any} */
+          let initialValue = null
+          return readable(initialValue, function start(set) {
+            const unsubscribe = connected.subscribe(function watch(value) {
+              if (value && value.event === eventName) {
+                const valueLocal = transformer(value.data)
+                // @ts-ignore
+                set(valueLocal)
+              }
+            })
+
+            return function stop() {
+              connected.close()
+              unsubscribe()
             }
           })
         },
