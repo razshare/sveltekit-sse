@@ -88,16 +88,18 @@ function produceStream({ start, lock, context, stop, ping = 30_000 }) {
           // Do nothing.
           // This means the client has already disconnected without notice.
         }
+
         context.connected = false
+
+        if (stop) {
+          await stop(self)
+        }
 
         const cancelInline = await started
         if (cancelInline) {
           await cancelInline(self)
         }
 
-        if (stop) {
-          await stop(self)
-        }
         return true
       }
 
