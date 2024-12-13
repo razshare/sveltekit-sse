@@ -96,7 +96,7 @@ function produceStream({ start, lock, context, stop, ping = 30_000 }) {
         }
 
         const cancelInline = await started
-        if (cancelInline) {
+        if (cancelInline && 'function' === typeof cancelInline) {
           await cancelInline(self)
         }
 

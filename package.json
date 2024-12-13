@@ -1,10 +1,11 @@
 {
   "name": "sveltekit-sse",
-  "version": "0.13.10",
+  "version": "0.13.11",
   "scripts": {
     "dev": "vite dev",
     "build": "vite build",
     "preview": "vite preview",
+    "prepackage": "npm run build",
     "package": "svelte-kit sync && svelte-package && publint",
     "postpackage": "playwright test",
     "prepublishOnly": "npm run package",
