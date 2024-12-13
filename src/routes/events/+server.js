@@ -51,7 +51,7 @@ function findCatQuote(language) {
 /**
  * Send some data to the client
  * @param {string} lang
- * @param {import('$lib/types.js').Connection} payload
+ * @param {import('$lib/types.external.js').Connection} payload
  */
 async function dumpData(lang, { emit, lock }) {
   for (let i = 0; i < 10; i++) {
