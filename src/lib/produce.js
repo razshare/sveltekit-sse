@@ -36,9 +36,7 @@ function createEmitter({ controller, context }) {
       controller.enqueue(encoder.encode(`id: ${id}\nevent: ${eventName}\n`))
       const chunks = data.split('\n')
       for (const chunk of chunks) {
-        controller.enqueue(
-          encoder.encode(`data: ${encodeURIComponent(chunk)}\n`),
-        )
+        controller.enqueue(encoder.encode(`data: ${chunk}\n`))
       }
       controller.enqueue(encoder.encode('\n'))
       id++

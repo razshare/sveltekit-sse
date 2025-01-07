@@ -32,7 +32,7 @@ function connectable({ resource, options, onClose, onError, onOpen }) {
         onOpen,
         onError,
         onMessage(e) {
-          set({ id: e.id, event: e.event, data: decodeURIComponent(e.data) })
+          set({ id: e.id, event: e.event, data: e.data })
         },
       })
 
