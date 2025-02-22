@@ -92,29 +92,28 @@ export function source(
         return {
           ...storeLocal,
           // eslint-disable-next-line @typescript-eslint/no-unused-vars
-          json(or) {
-            return readable(null)
+          json(
+            or = function orFallback() {
+              return null
+            },
+          ) {
+            return readable(
+              or({
+                // @ts-ignore
+                error: new Error(
+                  'First channel messages is a blank string and cannot be parsed as json.',
+                ),
+                raw: '',
+                // @ts-ignore
+                previous: null,
+              }),
+            )
           },
           transform(transformer) {
             return derived(storeLocal, transformer)
           },
         }
       },
-
-      // eslint-disable-next-line @typescript-eslint/no-unused-vars
-      // select(eventName) {
-      //   const storeLocal = readable('')
-      //   return {
-      //     ...storeLocal,
-      //     transform(transformer) {
-      //       return derived(storeLocal, transformer)
-      //     },
-      //     // eslint-disable-next-line @typescript-eslint/no-unused-vars
-      //     json(or) {
-      //       return readable(null)
-      //     },
-      //   }
-      // },
     }
   }
 
@@ -193,7 +192,11 @@ export function source(
 
       return {
         ...storeLocalCached,
-        json(or) {
+        json(
+          or = function orFallback() {
+            return null
+          },
+        ) {
           // @ts-ignore
           let previous = null
           let result = derived(storeLocalCached, function convert(raw) {
@@ -201,17 +204,16 @@ export function source(
               previous = JSON.parse(raw)
               return previous
             } catch (e) {
-              if (or) {
-                return or({
-                  // @ts-ignore
-                  error: e,
-                  raw: raw,
-                  // @ts-ignore
-                  previous,
-                })
-              }
+              return or({
+                // @ts-ignore
+                error: e,
+                raw: raw,
+                // @ts-ignore
+                previous,
+              })
             }
           })
+          console.error({ result })
           return result
         },
         transform(transformer) {

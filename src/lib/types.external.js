@@ -127,7 +127,7 @@ export {}
  */
 
 /**
- * @typedef {<T>(or?:import('./types.external').JsonPredicate<T>)=>import('svelte/store').Readable<T|null>} Jsonifier
+ * @typedef {<T>(or?:import('./types.external').JsonPredicate<T>)=>import('svelte/store').Readable<T>} Jsonifier
  */
 
 /**
