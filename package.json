@@ -1,63 +1,68 @@
 {
   "name": "sveltekit-sse",
-  "version": "0.13.16",
+  "version": "0.0.1",
   "scripts": {
     "dev": "vite dev",
-    "build": "vite build",
+    "build": "vite build && bun run prepack",
     "preview": "vite preview",
-    "prepackage": "npm run build",
-    "package": "svelte-kit sync && svelte-package && publint",
+    "prepare": "svelte-kit sync || echo ''",
+    "prepack": "svelte-kit sync && svelte-package && publint",
     "postpackage": "playwright test",
-    "prepublishOnly": "npm run package",
+    "prepublishOnly": "bun run package",
     "check": "svelte-kit sync && svelte-check --tsconfig ./jsconfig.json",
     "check:watch": "svelte-kit sync && svelte-check --tsconfig ./jsconfig.json --watch",
-    "lint": "prettier --check . && eslint .",
-    "lint:fix": "eslint --no-error-on-unmatched-pattern --fix \"./src/**/*.{js,ts,html,svelte}\"",
     "format": "prettier --write .",
-    "test": "playwright test"
-  },
-  "exports": {
-    ".": {
-      "types": "./dist/index.d.ts",
-      "svelte": "./dist/index.js"
-    }
+    "lint": "prettier --check . && eslint .",
+    "test:e2e": "playwright test",
+    "test": "bun run test:e2e"
   },
   "files": [
     "dist",
     "!dist/**/*.test.*",
     "!dist/**/*.spec.*"
   ],
-  "peerDependencies": {
-    "@microsoft/fetch-event-source": "^2.0.1",
-    "@sveltejs/kit": "^2.0.0",
-    "svelte": "^4.0.0 || ^5.0.0-next.0"
-  },
-  "devDependencies": {
-    "@playwright/test": "^1.28.1",
-    "@microsoft/fetch-event-source": "^2.0.1",
-    "@sveltejs/adapter-auto": "^3.0.0",
-    "@sveltejs/kit": "^2.0.0",
-    "@sveltejs/package": "^2.0.0",
-    "@sveltejs/vite-plugin-svelte": "^3.0.0",
-    "@types/eslint": "8.56.0",
-    "@typescript-eslint/eslint-plugin": "^6.19.1",
-    "@typescript-eslint/parser": "^6.19.1",
-    "bun-types": "latest",
-    "eslint": "^8.56.0",
-    "eslint-config-prettier": "^9.1.0",
-    "eslint-plugin-svelte": "^2.35.1",
-    "install": "^0.13.0",
-    "npm": "^10.2.5",
-    "prettier": "^3.1.1",
-    "prettier-plugin-svelte": "^3.1.2",
-    "publint": "^0.1.9",
-    "svelte": "^4.2.7",
-    "svelte-check": "^3.6.0",
-    "tslib": "^2.4.1",
-    "typescript": "^5.0.0",
-    "vite": "^5.0.11"
-  },
+  "sideEffects": [
+    "**/*.css"
+  ],
   "svelte": "./dist/index.js",
   "types": "./dist/index.d.ts",
-  "type": "module"
+  "type": "module",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "svelte": "./dist/index.js"
+    }
+  },
+  "peerDependencies": {
+    "@microsoft/fetch-event-source": "^2.0.1",
+    "svelte": "^5.0.0"
+  },
+  "devDependencies": {
+    "@eslint/compat": "^1.2.7",
+    "@eslint/js": "^9.22.0",
+    "@playwright/test": "^1.51.0",
+    "@sveltejs/adapter-auto": "^4.0.0",
+    "@sveltejs/kit": "^2.19.2",
+    "@sveltejs/package": "^2.3.10",
+    "@sveltejs/vite-plugin-svelte": "^5.0.3",
+    "@microsoft/fetch-event-source": "^2.0.1",
+    "@types/eslint": "^9.6.1",
+    "@typescript-eslint/eslint-plugin": "^8.26.1",
+    "@typescript-eslint/parser": "^8.26.1",
+    "bun-types": "latest",
+    "eslint": "^9.22.0",
+    "eslint-config-prettier": "^10.1.1",
+    "eslint-plugin-svelte": "^3.1.0",
+    "globals": "^16.0.0",
+    "prettier": "^3.5.3",
+    "prettier-plugin-svelte": "^3.3.3",
+    "publint": "^0.3.9",
+    "svelte": "^5.23.0",
+    "svelte-check": "^4.1.5",
+    "typescript": "^5.8.2",
+    "vite": "^6.2.2"
+  },
+  "keywords": [
+    "svelte"
+  ]
 }
