@@ -213,7 +213,6 @@ export function source(
               })
             }
           })
-          console.error({ result })
           return result
         },
         transform(transformer) {
