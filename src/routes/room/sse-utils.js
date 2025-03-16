@@ -5,7 +5,7 @@ import { readonly, writable } from 'svelte/store'
  * Wrapper for the source function that reconnects on close or error.
  *
  * @param {string} url Path to the stream.
- * @param {import('$lib/source').SourceConfiguration} [opts]
+ * @param {import('$lib').SourceConfiguration} [opts]
  */
 export function reconnectingSource(url, opts = {}) {
   /** @type {import('svelte/store').Writable<'connecting' | 'reconnecting' | 'connected' | 'closed' | 'errored' >} */
@@ -104,7 +104,7 @@ export function skipInvalidate() {
 /**
  * Default error handler for `.json()` transformer parsing errors.
  *
- * @type {import('$lib').JsonPredicate}
+ * @type {import('$lib').JsonPredicate<any>}
  */
 export function orPrevious({ error, previous, raw }) {
   console.warn(
