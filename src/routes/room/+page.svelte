@@ -19,7 +19,7 @@
   {:else}
     <li>
       <i
-        >(There are no participants inside the room... which is suprising,
+        >(There are no participants inside the room... which is surprising,
         because you are reading this)</i
       >
     </li>
