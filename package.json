@@ -1,12 +1,13 @@
 {
   "name": "sveltekit-sse",
-  "version": "0.13.17",
+  "version": "0.13.18",
   "license": "MIT",
   "scripts": {
     "dev": "vite dev",
     "build": "vite build && bun run prepack",
     "preview": "vite preview",
     "prepare": "svelte-kit sync || echo ''",
+    "package": "svelte-kit sync && svelte-package && publint",
     "prepack": "svelte-kit sync && svelte-package && publint",
     "postpackage": "playwright test",
     "prepublishOnly": "bun run package",
