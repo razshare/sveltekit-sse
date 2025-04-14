@@ -1,6 +1,6 @@
 {
   "name": "sveltekit-sse",
-  "version": "0.13.16",
+  "version": "0.13.17",
   "license": "MIT",
   "scripts": {
     "dev": "vite dev",
