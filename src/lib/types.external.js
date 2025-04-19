@@ -106,7 +106,7 @@ export {}
  * @property {boolean} [cache] Wether or not to cache connections, defaults to `true`.
  * > **Note**\
  * > Connections are cached based on `from` and `options`.\
- * > If two sources define all three properties with the same values, then both sources will share the same connection,
+ * > If two sources define both properties with the same values, then both sources will share the same connection,
  * > otherwise they will create and use two separate connections.
  */
 

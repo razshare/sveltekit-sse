@@ -62,7 +62,7 @@ function connectable({ resource, options, onClose, onError, onOpen }) {
 /**
  * Source a server sent event.
  *
- * Multiple sources may share the same underlying connection if they use the same path (`from`).
+ * Multiple sources may share the same underlying connection if they use the same path (`from`) and the same options (`options`).
  * > ## Example
  * > ```js
  * > const connection = source({
@@ -86,12 +86,11 @@ export function source(
     return {
       close() {},
       // @ts-ignore
-      // eslint-disable-next-line @typescript-eslint/no-unused-vars
+      // eslint-disable-next-line no-unused-vars
       select(eventName) {
         const storeLocal = readable('')
         return {
           ...storeLocal,
-          // eslint-disable-next-line @typescript-eslint/no-unused-vars
           json(
             or = function orFallback() {
               return null

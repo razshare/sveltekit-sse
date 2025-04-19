@@ -56,7 +56,6 @@ function produceStream({ start, lock, context, stop, ping = 30_000 }) {
   return new ReadableStream({
     async start(controller) {
       context.connected = true
-      // eslint-disable-next-line @typescript-eslint/no-this-alias
       const self = this
       const emit = createEmitter({ controller, context })
       const started = start({ source: self, emit, lock })
