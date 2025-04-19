@@ -1,5 +1,5 @@
-import { delay } from '$lib/delay'
-import { getPlaywrightState } from '$lib/playwright/getPlaywrightState'
+import { delay } from '../src/lib/delay'
+import { getPlaywrightState } from '../src/lib/playwright/getPlaywrightState'
 import { expect, test } from '@playwright/test'
 
 test('Reading at least 3 cat quotes from `/events` stream.', async function run({
