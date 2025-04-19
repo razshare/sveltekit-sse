@@ -15,7 +15,6 @@ jobs:
       - uses: oven-sh/setup-bun@v2
         with:
           node-version: 20
-      - run: bun ci
       - run: bunx playwright install --with-deps
       - run: bun test
 
@@ -28,7 +27,6 @@ jobs:
         with:
           node-version: 20
           registry-url: https://registry.npmjs.org/
-      - run: bun ci
       - run: bun publish
         env:
           NODE_AUTH_TOKEN: ${{secrets.npm_token}}
