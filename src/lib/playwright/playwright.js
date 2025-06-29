@@ -18,11 +18,18 @@ import { IS_BROWSER } from '../constants'
  */
 
 /**
+ * @typedef Issue65
+ * @property {string} cpu_usage
+ * @property {string} memory
+ */
+
+/**
  * @typedef PlaywrightState
  * @property {number} counter
  * @property {Issue43} issue43
  * @property {Issue48} issue48
  * @property {Issue55} issue55
+ * @property {Issue65} issue65
  */
 
 /** @type {PlaywrightState} */
@@ -38,6 +45,10 @@ let state = {
   },
   issue55: {
     messages: [],
+  },
+  issue65: {
+    cpu_usage: '',
+    memory: '',
   },
 }
 

@@ -1,8 +1,5 @@
-import {
-  EventStreamContentType,
-  fetchEventSource,
-} from '@microsoft/fetch-event-source'
 import { IS_BROWSER } from './constants'
+import { fetchEventSource } from './fetchEventSource'
 import { uuid } from './uuid'
 
 /**
@@ -130,7 +127,7 @@ export function consume({
         statusText = statusTextLocal
         headers = headersLocal
 
-        if (ok && headers.get('content-type') === EventStreamContentType) {
+        if (ok && headers.get('content-type') === 'text/event-stream') {
           for (const onOpen of events.onOpen) {
             onOpen({
               id: '',

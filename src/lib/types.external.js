@@ -192,4 +192,23 @@ export {}
  * - Client disconnected
  */
 
-// Consume.
+// fetchEventSource.
+
+/**
+ * @typedef FetchEventSourceMessage
+ * @property {string} id
+ * @property {string} event
+ * @property {string} data
+ * @property {number} [retry]
+ */
+
+/**
+ * @typedef FetchEventSourceInit
+ * @property {AbortSignal} [signal]
+ * @property {Record<string,string>} [headers]
+ * @property {function(Response):Promise<void>} [onopen]
+ * @property {function(FetchEventSourceMessage):void} [onmessage]
+ * @property {function():void} [onclose]
+ * @property {function(Error):void} [onerror]
+ * @property {boolean} [openWhenHidden]
+ */

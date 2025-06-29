@@ -8,7 +8,9 @@
     },
   })
   const message = connection.select('message')
-  $: playwright.state.issue55.messages.push($message)
+  $effect(function track() {
+    playwright.state.issue55.messages.push($message)
+  })
 </script>
 
 <h3>{$message}</h3>
