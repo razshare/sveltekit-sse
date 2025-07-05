@@ -124,7 +124,7 @@ Both ways are valid.
 
 > [!NOTE]
 > In the second case, using `options::stop()`, your code will also 
-> run if the client itself cancels the connections.
+> run if the client itself cancels the connection.
 
 ## Cleanup
 
@@ -270,7 +270,7 @@ Whatever this function returns will become the new value of the store, in the ex
 ## FAQ
 
 - How can I produce data from third party sources?\
-  This library doesn't provide an direct answer to that question, but the road to an answer is short.\
+  This library doesn't provide a direct answer to that question, but the road to an answer is short.\
   You will have to identify users using sessions (or some equivalent mechanism, for example actual database-backed accounts) and map them to references of their respective emitters.\
   For example using a global map
   ```js

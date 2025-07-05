@@ -13,8 +13,7 @@
     "check:watch": "bunx svelte-kit sync && bunx svelte-check --tsconfig ./jsconfig.json --watch",
     "format": "prettier --write .",
     "lint": "prettier --check . && eslint .",
-    "test:e2e": "playwright test",
-    "test": "bun run test:e2e"
+    "test": "playwright test"
   },
   "files": [
     "dist",

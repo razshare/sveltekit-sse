@@ -32,7 +32,7 @@ test('Making sure connect() and close() work properly.', async function run({
 test('Making sure internal readable store is cached between subscribes when pointing to the same source.', async function run({
   page,
 }) {
-  // Testing issue 43 https://github.com/razshare/sveltekit-sse/issues/43
+  // Testing issue 48 https://github.com/razshare/sveltekit-sse/issues/48
   await page.goto('/issue-48')
   await delay(3500)
   const { issue48 } = await getPlaywrightState({ page })
@@ -54,4 +54,12 @@ test('Making sure GET producers and GET sources work properly.', async function 
   await delay(3500)
   const { issue55 } = await getPlaywrightState({ page })
   expect(issue55.messages.length).toBeGreaterThanOrEqual(3)
+})
+
+test('Making sure http headers work properly.', async function run({ page }) {
+  // Testing changes made in response to issue 68 https://github.com/razshare/sveltekit-sse/issues/68
+  await page.goto('/issue-68')
+  await delay(2000)
+  const { issue68 } = await getPlaywrightState({ page })
+  expect(issue68.name).toContain('Hello World, the time is ')
 })
