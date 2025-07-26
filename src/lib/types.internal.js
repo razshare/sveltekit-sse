@@ -5,7 +5,7 @@ export {}
 /**
  * @typedef ConnectablePayload
  * @property {string} resource Path to the stream.
- * @property {import('./types.external').Options} options Options for the underlying http request.
+ * @property {import("./types.external").FetchEventSourceInit} options Options for the underlying http request.
  * @property {import('./types.external').EventListener} onError
  * @property {import('./types.external').EventListener} onClose
  * @property {import('./types.external').EventListener} onOpen
@@ -70,7 +70,7 @@ export {}
 /**
  * @typedef ConsumePayload
  * @property {string} resource
- * @property {import('./types.external').Options} options
+ * @property {import("./types.external").FetchEventSourceInit} options
  * @property {import('./types.external').EventListener} onMessage
  * @property {import('./types.external').EventListener} onError
  * @property {import('./types.external').EventListener} onClose

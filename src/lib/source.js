@@ -196,7 +196,7 @@ export function source(
             return null
           },
         ) {
-          // @ts-ignore
+          /** @type {any} */
           let previous = null
           let result = derived(storeLocalCached, function convert(raw) {
             try {

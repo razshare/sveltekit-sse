@@ -66,6 +66,7 @@ function newLiner(callback) {
             break
           case 13:
             discardTrailingNewline = true
+          // eslint-disable-next-line no-fallthrough
           case 10:
             lineEnd = position
             break
@@ -125,6 +126,7 @@ function newMessenger(onid, onretry, onmessage) {
         onid((message.id = value))
         break
       case 'retry':
+        // eslint-disable-next-line no-case-declarations
         const retry = parseInt(value, 10)
         if (!isNaN(retry)) {
           onretry((message.retry = retry))

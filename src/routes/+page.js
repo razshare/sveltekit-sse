@@ -18,19 +18,18 @@ export function load({ url }) {
     },
   })
 
-  /**
-   * @type {import('svelte/store').Readable<null|import('./events/+server.js').Quote>}
-   */
-  const quote = connection.select('cat-quote').json(function or({
-    error,
-    previous,
-    raw,
-  }) {
-    console.warn(
-      `Could not parse "${raw}" as json, reverting back to ${previous}. ${error}`,
-    )
-    return previous
-  })
+  const quote = connection.select('cat-quote').json(
+    /**
+     * @param {{error:Error,previous:import('./events/+server.js').Quote?,raw:string}} payload
+     * @returns
+     */
+    function or({ error, previous, raw }) {
+      console.warn(
+        `Could not parse "${raw}" as json, reverting back to ${previous}. ${error}`,
+      )
+      return previous
+    },
+  )
 
   // setTimeout(function disconnect() {
   //   console.log('Closing manually...')
