@@ -118,7 +118,7 @@ export function source(
 
   let key = ''
   if (cache) {
-    key = btoa(JSON.stringify({ from, options }))
+    key = btoa(encodeURIComponent(JSON.stringify({ from, options })))
     const cachedSource = cachedSources.get(key)
     if (cachedSource) {
       return cachedSource
