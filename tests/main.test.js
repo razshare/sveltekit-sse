@@ -63,3 +63,14 @@ test('Making sure http headers work properly.', async function run({ page }) {
   const { issue68 } = await getPlaywrightState({ page })
   expect(issue68.name).toContain('Hello World, the time is ')
 })
+
+test('Making sure connection gets cached using non Latin1 characters.', async function run({
+  page,
+}) {
+  // Testing changes made in PR 69 https://github.com/razshare/sveltekit-sse/pull/69
+  await page.goto('/pr-69')
+  await delay(1000)
+  const { pullRequest69 } = await getPlaywrightState({ page })
+  expect(pullRequest69.message1).toBe(pullRequest69.message2)
+  expect(pullRequest69.message1).toContain('hello 猫')
+})

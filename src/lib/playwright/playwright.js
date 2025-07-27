@@ -29,6 +29,12 @@ import { IS_BROWSER } from '../constants'
  */
 
 /**
+ * @typedef PullRequest69
+ * @property {string} message1
+ * @property {string} message2
+ */
+
+/**
  * @typedef PlaywrightState
  * @property {number} counter
  * @property {Issue43} issue43
@@ -36,6 +42,7 @@ import { IS_BROWSER } from '../constants'
  * @property {Issue55} issue55
  * @property {Issue65} issue65
  * @property {Issue68} issue68
+ * @property {PullRequest69} pullRequest69
  */
 
 /** @type {PlaywrightState} */
@@ -58,6 +65,10 @@ let state = {
   },
   issue68: {
     name: '',
+  },
+  pullRequest69: {
+    message1: '',
+    message2: '',
   },
 }
 
