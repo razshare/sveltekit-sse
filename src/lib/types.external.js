@@ -203,7 +203,7 @@ export {}
  * @property {string} [method]
  * @property {any} [body]
  * @property {Record<string,string>} [headers]
- * @property {function(Response):Promise<void>} [onopen]
+ * @property {function(Response):void} [onopen]
  * @property {function(FetchEventSourceMessage):void} [onmessage]
  * @property {function():void} [onclose]
  * @property {function(Error):void} [onerror]

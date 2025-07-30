@@ -35,6 +35,12 @@ import { IS_BROWSER } from '../constants'
  */
 
 /**
+ * @typedef Issue70
+ * @property {number} status
+ * @property {import('$lib/types.external').FetchEventSourceMessage[]} onmessage
+ */
+
+/**
  * @typedef PlaywrightState
  * @property {number} counter
  * @property {Issue43} issue43
@@ -43,6 +49,7 @@ import { IS_BROWSER } from '../constants'
  * @property {Issue65} issue65
  * @property {Issue68} issue68
  * @property {PullRequest69} pullRequest69
+ * @property {Issue70} issue70
  */
 
 /** @type {PlaywrightState} */
@@ -69,6 +76,10 @@ let state = {
   pullRequest69: {
     message1: '',
     message2: '',
+  },
+  issue70: {
+    onmessage: [],
+    status: -1,
   },
 }
 

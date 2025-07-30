@@ -205,7 +205,7 @@ export function fetchEventSource(input, init = {}) {
 
       try {
         const response = await fetch(input, init)
-        await onopen(response)
+        onopen(response)
         if (!response.body) {
           reject(new Error(`empty response from source ${input}.`))
           return

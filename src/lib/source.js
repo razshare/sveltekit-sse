@@ -24,11 +24,7 @@ function connectable({ resource, options, onClose, onError, onOpen }) {
       const consumedStream = consume({
         resource,
         options,
-        onClose(e) {
-          if (onClose) {
-            onClose(e)
-          }
-        },
+        onClose,
         onOpen,
         onError,
         onMessage(e) {

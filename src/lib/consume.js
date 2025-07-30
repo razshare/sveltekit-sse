@@ -48,6 +48,11 @@ export function consume({
     const id = uuid({ short: true })
     const isLocal = localAbort
     localAbort = false
+
+    if (options.onclose) {
+      options.onclose()
+    }
+
     for (const onClose of events.onClose) {
       onClose({
         id,
@@ -117,17 +122,22 @@ export function consume({
       openWhenHidden,
       method: 'POST',
       ...rest,
-      async onopen({
-        headers: headersLocal,
-        status: statusLocal,
-        statusText: statusTextLocal,
-        ok,
-      }) {
+      async onopen(response) {
+        const {
+          headers: headersLocal,
+          status: statusLocal,
+          statusText: statusTextLocal,
+          ok,
+        } = response
         status = statusLocal
         statusText = statusTextLocal
         headers = headersLocal
 
         if (ok && headers.get('content-type') === 'text/event-stream') {
+          if (options.onopen) {
+            options.onopen(response)
+          }
+
           for (const onOpen of events.onOpen) {
             onOpen({
               id: '',
@@ -148,6 +158,10 @@ export function consume({
         }
       },
       onmessage({ id, event, data }) {
+        if (options.onmessage) {
+          options.onmessage({ id, event, data })
+        }
+
         for (const onMessage of events.onMessage) {
           onMessage({
             id,
@@ -163,6 +177,10 @@ export function consume({
         }
       },
       onclose() {
+        if (options.onclose) {
+          options.onclose()
+        }
+
         for (const onClose of events.onClose) {
           onClose({
             id: '',
@@ -178,6 +196,9 @@ export function consume({
         }
       },
       onerror(error) {
+        if (options.onerror) {
+          options.onerror(error)
+        }
         for (const onError of events.onError) {
           onError({
             id: '',
