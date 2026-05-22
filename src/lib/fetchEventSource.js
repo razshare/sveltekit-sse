@@ -240,7 +240,8 @@ export function fetchEventSource(input, init = {}) {
       } catch (error) {
         if (!controller.signal.aborted) {
           if (init.onerror) {
-            onerror(error);
+            // @ts-expect-error
+            init.onerror(error)
           }
           controller.abort()
           reject(error)
