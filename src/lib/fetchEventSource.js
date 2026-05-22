@@ -239,6 +239,9 @@ export function fetchEventSource(input, init = {}) {
         resolve()
       } catch (error) {
         if (!controller.signal.aborted) {
+          if (init.onerror) {
+            onerror(error);
+          }
           controller.abort()
           reject(error)
           return
