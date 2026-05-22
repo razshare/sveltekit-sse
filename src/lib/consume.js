@@ -118,7 +118,8 @@ export function consume({
 
     wireControllers()
 
-    await fetchEventSource(`${resource}`, {
+    /** @type {import("./types.external").FetchEventSourceInit}*/
+    const fetchEventSourceOptions = {
       openWhenHidden,
       method: 'POST',
       ...rest,
@@ -215,7 +216,16 @@ export function consume({
         }
       },
       signal: controller.signal,
-    })
+    }
+
+    try {
+      await fetchEventSource(`${resource}`, fetchEventSourceOptions)
+    } catch (error) {
+      if (fetchEventSourceOptions.onerror) {
+        //@ts-expect-error
+        fetchEventSourceOptions.onerror(error)
+      }
+    }
   }
 
   connect()

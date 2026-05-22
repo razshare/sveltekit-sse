@@ -87,3 +87,16 @@ test('Making sure onmessage event is triggered on the source object.', async fun
   expect(issue70.onmessage[0].event).toBe('message')
   expect(issue70.onmessage[0].id).toBe('1')
 })
+
+test('Making sure on error is invoked correctly event is triggered on the source object.', async function run({
+  page,
+}) {
+  // Testing changes made in response to issue 70 https://github.com/razshare/sveltekit-sse/issues/70
+  await page.goto('/issue-70')
+  await delay(1000)
+  const { issue70 } = await getPlaywrightState({ page })
+  expect(issue70.status).toBe(200)
+  expect(issue70.onmessage.length).toBeGreaterThan(0)
+  expect(issue70.onmessage[0].event).toBe('message')
+  expect(issue70.onmessage[0].id).toBe('1')
+})

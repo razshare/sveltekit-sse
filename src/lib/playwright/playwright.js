@@ -41,6 +41,11 @@ import { IS_BROWSER } from '../constants'
  */
 
 /**
+ * @typedef Issue73
+ * @property {boolean} connected
+ */
+
+/**
  * @typedef PlaywrightState
  * @property {number} counter
  * @property {Issue43} issue43
@@ -50,6 +55,7 @@ import { IS_BROWSER } from '../constants'
  * @property {Issue68} issue68
  * @property {PullRequest69} pullRequest69
  * @property {Issue70} issue70
+ * @property {Issue73} issue73
  */
 
 /** @type {PlaywrightState} */
@@ -80,6 +86,9 @@ let state = {
   issue70: {
     onmessage: [],
     status: -1,
+  },
+  issue73: {
+    connected: false,
   },
 }
 
