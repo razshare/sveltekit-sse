@@ -202,7 +202,6 @@ export function fetchEventSource(input, init = {}) {
 
     async function submit() {
       controller = new AbortController()
-
       try {
         const response = await fetch(input, init)
         onopen(response)
@@ -210,7 +209,6 @@ export function fetchEventSource(input, init = {}) {
           reject(new Error(`empty response from source ${input}.`))
           return
         }
-
         const messenger = newMessenger(
           function onid(id) {
             if (id) {
@@ -239,20 +237,14 @@ export function fetchEventSource(input, init = {}) {
         resolve()
       } catch (error) {
         if (!controller.signal.aborted) {
-          if (init.onerror) {
-            // @ts-expect-error
-            init.onerror(error)
-          }
           controller.abort()
           reject(error)
           return
         }
-
         try {
           if (timer >= 0) {
             window.clearTimeout(timer)
           }
-
           timer = window.setTimeout(submit, interval)
         } catch (innerError) {
           dispose()
@@ -260,7 +252,6 @@ export function fetchEventSource(input, init = {}) {
         }
       }
     }
-
     submit()
   })
 }

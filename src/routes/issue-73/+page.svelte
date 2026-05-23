@@ -13,7 +13,7 @@
       status = 'Disconnected'
       playwright.state.issue73.connected = false
     },
-    error() {
+    async error() {
       status = 'Disconnected'
       playwright.state.issue73.connected = false
     },
