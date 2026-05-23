@@ -3,19 +3,10 @@ export {}
 // Source.
 
 /**
- * @typedef ConnectablePayload
- * @property {string} resource Path to the stream.
- * @property {import("./types.external").FetchEventSourceInit} options Options for the underlying http request.
- * @property {import('./types.external').EventListener} onError
- * @property {import('./types.external').EventListener} onClose
- * @property {import('./types.external').EventListener} onOpen
- */
-
-/**
  * A message from the currently connected source.
  * @typedef ConnectableMessage
  * @property {string} id Message identifier.
- * @property {string} event Event name.
+ * @property {string} eventName Event name.
  * @property {string} data Event data.
  */
 
@@ -60,25 +51,22 @@ export {}
 // Consume.
 
 /**
- * @typedef StreamEvents
- * @property {Array<import('./types.external').EventListener>} onError
- * @property {Array<import('./types.external').EventListener>} onClose
- * @property {Array<import('./types.external').EventListener>} onMessage
- * @property {Array<import('./types.external').EventListener>} onOpen
- */
-
-/**
- * @typedef ConsumePayload
- * @property {string} resource
- * @property {import("./types.external").FetchEventSourceInit} options
- * @property {import('./types.external').EventListener} onMessage
- * @property {import('./types.external').EventListener} onError
- * @property {import('./types.external').EventListener} onClose
- * @property {import('./types.external').EventListener} onOpen
- */
-
-/**
  * @typedef ConsumedStream
  * @property {AbortController} controller
  * @property {string} resource
+ */
+
+// FetchEventSource
+
+/**
+ * @typedef FetchEventSourceOptions
+ * @property {function():void} [onclose] Do something whenever the connection closes.
+ * @property {function(Response):void} [onopen] Do something whenever the connection opens.
+ * @property {function(Error):void} [onerror] Do something whenever there are errors.
+ * @property {function(import("./types.external").Message):void} [onmessage] Do something whenever a message is received.
+ * @property {AbortSignal} [signal]
+ * @property {string} [method]
+ * @property {any} [body]
+ * @property {Record<string,string>} [headers]
+ * @property {boolean} [openWhenHidden]
  */

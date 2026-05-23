@@ -4,7 +4,7 @@
 
   source('/issue-48/events', {
     cache: false,
-    open() {
+    onopen() {
       console.log('connected')
       playwright.state.issue48.connected++
     },
@@ -17,7 +17,7 @@
 
   source('/issue-48/events', {
     cache: true,
-    open() {
+    onopen() {
       console.log('connected')
       playwright.state.issue48.connected++
     },
@@ -30,7 +30,7 @@
 
   source('/issue-48/events', {
     cache: true,
-    open() {
+    onopen() {
       console.log('connected')
       playwright.state.issue48.connected++
     },
@@ -44,7 +44,7 @@
   setTimeout(function run() {
     source('/issue-48/events', {
       cache: true,
-      open() {
+      onopen() {
         console.log('connected')
         playwright.state.issue48.connected++
       },

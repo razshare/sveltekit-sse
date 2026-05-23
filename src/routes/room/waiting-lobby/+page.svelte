@@ -12,6 +12,7 @@
     goto('/room')
   }
 
+  // eslint-disable-next-line svelte/no-reactive-functions
   $: cancel = function cancel() {
     data.connection.close()
   }

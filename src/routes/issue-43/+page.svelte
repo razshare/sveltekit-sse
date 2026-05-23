@@ -9,12 +9,12 @@
   }
 
   const connection = source(`/issue-43/events`, {
-    close({ connect }) {
+    onclose({ connect }) {
       console.log('close')
       playwright.state.issue43.disconnections++
       reconnect = connect
     },
-    open() {
+    onopen() {
       console.log('open')
       playwright.state.issue43.connections++
     },

@@ -4,23 +4,33 @@ import { uuid } from './uuid'
 
 /**
  *
- * @param {import('./types.internal').ConsumePayload} payload
+ * @param {string} resource
+ * @param {import('./types.external').Options} options
  * @returns {import('./types.internal').ConsumedStream}
  */
-export function consume({
-  resource,
-  options,
-  onMessage,
-  onError,
-  onClose,
-  onOpen,
-}) {
-  /** @type {import('./types.internal').StreamEvents} */
+export function consume(resource, options = {}) {
   const events = {
-    onClose: [onClose],
-    onError: [onError],
-    onMessage: [onMessage],
-    onOpen: [onOpen],
+    /** @type {import('./types.external').EventListener[]} */
+    onclose: [],
+    /** @type {import('./types.external').EventListener[]} */
+    onerror: [],
+    /** @type {import('./types.external').EventListener[]} */
+    onmessage: [],
+    /** @type {import('./types.external').EventListener[]} */
+    onopen: [],
+  }
+
+  if (options.onclose) {
+    events.onclose.push(options.onclose)
+  }
+  if (options.onerror) {
+    events.onerror.push(options.onerror)
+  }
+  if (options.onmessage) {
+    events.onmessage.push(options.onmessage)
+  }
+  if (options.onopen) {
+    events.onopen.push(options.onopen)
   }
 
   // Assume the worst then let `onopen()` handle the rest
@@ -28,6 +38,8 @@ export function consume({
   let statusText = 'Internal Server Error'
   let headers = new Headers()
   let localAbort = false
+  /** @type {Response|false} */
+  let response = false
 
   /**
    * Userland should never have direct access to this controller.\
@@ -49,14 +61,13 @@ export function consume({
     const isLocal = localAbort
     localAbort = false
 
-    if (options.onclose) {
-      options.onclose()
-    }
-
-    for (const onClose of events.onClose) {
-      onClose({
+    for (const onclose of events.onclose) {
+      if (!response) {
+        continue
+      }
+      onclose({
         id,
-        event: 'close',
+        name: 'close',
         data: '',
         connect,
         isLocal,
@@ -64,6 +75,7 @@ export function consume({
         statusText,
         headers,
         close,
+        response,
       })
     }
   }
@@ -118,12 +130,12 @@ export function consume({
 
     wireControllers()
 
-    /** @type {import("./types.external").FetchEventSourceInit}*/
-    const fetchEventSourceOptions = {
+    await fetchEventSource(`${resource}`, {
       openWhenHidden,
       method: 'POST',
       ...rest,
-      async onopen(response) {
+      async onopen(responseLocal) {
+        response = responseLocal
         const {
           headers: headersLocal,
           status: statusLocal,
@@ -135,14 +147,10 @@ export function consume({
         headers = headersLocal
 
         if (ok && headers.get('content-type') === 'text/event-stream') {
-          if (options.onopen) {
-            options.onopen(response)
-          }
-
-          for (const onOpen of events.onOpen) {
-            onOpen({
+          for (const onopen of events.onopen) {
+            onopen({
               id: '',
-              event: 'open',
+              name: 'open',
               data: '',
               connect,
               isLocal: false,
@@ -150,6 +158,7 @@ export function consume({
               statusText,
               headers,
               close,
+              response,
             })
           }
         } else {
@@ -159,14 +168,13 @@ export function consume({
         }
       },
       onmessage({ id, event, data }) {
-        if (options.onmessage) {
-          options.onmessage({ id, event, data })
-        }
-
-        for (const onMessage of events.onMessage) {
-          onMessage({
+        for (const onmessage of events.onmessage) {
+          if (!response) {
+            continue
+          }
+          onmessage({
             id,
-            event,
+            name: event,
             data,
             connect,
             isLocal: false,
@@ -174,18 +182,18 @@ export function consume({
             statusText,
             headers,
             close,
+            response,
           })
         }
       },
       onclose() {
-        if (options.onclose) {
-          options.onclose()
-        }
-
-        for (const onClose of events.onClose) {
-          onClose({
+        for (const onclose of events.onclose) {
+          if (!response) {
+            continue
+          }
+          onclose({
             id: '',
-            event: 'close',
+            name: 'close',
             data: '',
             connect,
             isLocal: false,
@@ -193,17 +201,18 @@ export function consume({
             statusText,
             headers,
             close,
+            response,
           })
         }
       },
       onerror(error) {
-        if (options.onerror) {
-          options.onerror(error)
-        }
-        for (const onError of events.onError) {
-          onError({
+        for (const onerror of events.onerror) {
+          if (!response) {
+            continue
+          }
+          onerror({
             id: '',
-            event: 'error',
+            name: 'error',
             data: '',
             error,
             connect,
@@ -212,23 +221,13 @@ export function consume({
             statusText,
             headers,
             close,
+            response,
           })
         }
       },
       signal: controller.signal,
-    }
-
-    try {
-      await fetchEventSource(`${resource}`, fetchEventSourceOptions)
-    } catch (error) {
-      if (fetchEventSourceOptions.onerror) {
-        //@ts-expect-error
-        fetchEventSourceOptions.onerror(error)
-      }
-    }
+    })
   }
-
   connect()
-
   return result
 }

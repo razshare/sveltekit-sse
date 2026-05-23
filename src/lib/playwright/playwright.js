@@ -30,6 +30,8 @@ import { IS_BROWSER } from '../constants'
 
 /**
  * @typedef PullRequest69
+ * @property {1|import('$lib/types.external').Source} connection1
+ * @property {2|import('$lib/types.external').Source} connection2
  * @property {string} message1
  * @property {string} message2
  */
@@ -37,12 +39,14 @@ import { IS_BROWSER } from '../constants'
 /**
  * @typedef Issue70
  * @property {number} status
- * @property {import('$lib/types.external').FetchEventSourceMessage[]} onmessage
+ * @property {import('$lib/types.external').Event[]} onmessage
  */
 
 /**
  * @typedef Issue73
- * @property {boolean} connected
+ * @property {number} connections
+ * @property {number} disconnections
+ * @property {number} abruptDisconnections
  */
 
 /**
@@ -80,6 +84,8 @@ let state = {
     name: '',
   },
   pullRequest69: {
+    connection1: 1,
+    connection2: 2,
     message1: '',
     message2: '',
   },
@@ -88,7 +94,9 @@ let state = {
     status: -1,
   },
   issue73: {
-    connected: false,
+    connections: 0,
+    disconnections: 0,
+    abruptDisconnections: 0,
   },
 }
 

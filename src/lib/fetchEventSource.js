@@ -89,7 +89,7 @@ function newLiner(callback) {
 }
 /**
  *
- * @returns {import("./types.external").FetchEventSourceMessage}
+ * @returns {import("./types.external").Message}
  */
 function newMessage() {
   return { data: '', event: '', id: '' }
@@ -99,7 +99,7 @@ function newMessage() {
  *
  * @param {function(string):void} onid
  * @param {function(number|undefined):void} onretry
- * @param {function(import("./types.external").FetchEventSourceMessage):void} onmessage
+ * @param {function(import("./types.external").Message):void} onmessage
  * @returns {function(Uint8Array<ArrayBufferLike>,number)}
  */
 function newMessenger(onid, onretry, onmessage) {
@@ -151,12 +151,12 @@ async function defaultOnOpen(response) {
 /**
  *
  * @param {RequestInfo} input
- * @param {import("./types.external").FetchEventSourceInit} init
+ * @param {import("./types.internal").FetchEventSourceOptions} [options]
  * @returns {Promise<void>}
  */
-export function fetchEventSource(input, init = {}) {
-  return new Promise(function run(resolve, reject) {
-    const headers = Object.assign({}, init.headers)
+export function fetchEventSource(input, options = {}) {
+  return new Promise(function run(resolve) {
+    const headers = Object.assign({}, options.headers)
     if (!headers.accept) {
       headers.accept = 'text/event-stream'
     }
@@ -184,12 +184,12 @@ export function fetchEventSource(input, init = {}) {
       }
     }
 
-    if (!init.openWhenHidden) {
+    if (!options.openWhenHidden) {
       document.addEventListener('visibilitychange', onVisibilityChange)
     }
 
-    if (init.signal) {
-      init.signal.addEventListener('abort', function cancel() {
+    if (options.signal) {
+      options.signal.addEventListener('abort', function cancel() {
         if (!controller) {
           return
         }
@@ -198,15 +198,26 @@ export function fetchEventSource(input, init = {}) {
       })
     }
 
-    const onopen = init.onopen ?? defaultOnOpen
+    const onopen = options.onopen ?? defaultOnOpen
 
     async function submit() {
       controller = new AbortController()
       try {
-        const response = await fetch(input, init)
+        const response = await fetch(input, {
+          signal: options.signal,
+          method: options.method,
+          body: options.body,
+          headers: options.headers,
+        })
         onopen(response)
         if (!response.body) {
-          reject(new Error(`empty response from source ${input}.`))
+          const error = new Error(`empty response from source ${input}.`)
+          if (options.onerror) {
+            options.onerror(error)
+          } else {
+            console.error(error)
+          }
+          resolve()
           return
         }
         const messenger = newMessenger(
@@ -221,24 +232,30 @@ export function fetchEventSource(input, init = {}) {
             interval = intervalLocal
           },
           function onmessage(message) {
-            if (!init.onmessage) {
+            if (!options.onmessage) {
               return
             }
-            init.onmessage(message)
+            options.onmessage(message)
           },
         )
         const liner = newLiner(messenger)
         await chunk(response.body, liner)
 
-        if (init.onclose) {
-          init.onclose()
+        if (options.onclose) {
+          options.onclose()
         }
         dispose()
         resolve()
       } catch (error) {
         if (!controller.signal.aborted) {
           controller.abort()
-          reject(error)
+          if (options.onerror) {
+            //@ts-expect-error
+            options.onerror(error)
+          } else {
+            console.error(error)
+          }
+          resolve()
           return
         }
         try {
@@ -248,7 +265,13 @@ export function fetchEventSource(input, init = {}) {
           timer = window.setTimeout(submit, interval)
         } catch (innerError) {
           dispose()
-          reject(innerError)
+          if (options.onerror) {
+            //@ts-expect-error
+            options.onerror(innerError)
+          } else {
+            console.error(innerError)
+          }
+          resolve()
         }
       }
     }

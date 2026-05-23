@@ -1,11 +1,11 @@
 import { catName } from '../cat-name'
-import { reconnectingSource, orPrevious } from '../sse-utils'
+import { orPrevious, reconnectingSource } from '../sse-utils'
 
 export function load() {
   const id = catName()
 
   const connection = reconnectingSource(`/room/waiting-lobby`, {
-    options: { body: JSON.stringify({ id }) },
+    body: JSON.stringify({ id }),
   })
 
   /** @type {import('svelte/store').Readable<import('../mock-db.server').User | null>} */

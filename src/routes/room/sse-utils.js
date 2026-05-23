@@ -5,7 +5,7 @@ import { readonly, writable } from 'svelte/store'
  * Wrapper for the source function that reconnects on close or error.
  *
  * @param {string} url Path to the stream.
- * @param {import('$lib').SourceConfiguration} [opts]
+ * @param {import('$lib').Options} [opts]
  */
 export function reconnectingSource(url, opts = {}) {
   /** @type {import('svelte/store').Writable<'connecting' | 'reconnecting' | 'connected' | 'closed' | 'errored' >} */
@@ -22,12 +22,11 @@ export function reconnectingSource(url, opts = {}) {
   }
 
   const connection = source(url, {
-    open({ connect }) {
+    onopen({ connect }) {
       status.set('connected')
       _connect = connect
     },
-
-    close({ connect, isLocal }) {
+    onclose({ connect, isLocal }) {
       status.set('closed')
       _connect = connect
 
@@ -40,8 +39,7 @@ export function reconnectingSource(url, opts = {}) {
         reconnect()
       }
     },
-
-    error({ connect, error, isLocal }) {
+    onerror({ connect, error, isLocal }) {
       status.set('errored')
       _connect = connect
       console.error(`Connection to ${url} errored:`, error)

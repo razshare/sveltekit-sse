@@ -23,14 +23,15 @@ export {}
  * @typedef Event
  * @property {string} id Message identifier, it identifies a message\
  * This value is not globally unique, it is only unique within the current stream's scope.
- * @property {string} event Name of the event.
+ * @property {string} name Name of the event.
  * @property {string} data Message data.
  * @property {boolean} isLocal If `true` then this event has been emitted locally, not by the server.
  * @property {number} status The status code of the underlying http response.
  * @property {string} statusText The status text of the underlying http response.
  * @property {Headers} headers The headers of the underlying http response.
- * @property {function():void} connect Connect the stream.
+ * @property {function():Promise<void>} connect Connect the stream.
  * @property {Error} [error] Something went wrong.
+ * @property {Response} response The initial response the started the stream.
  * > **Note**\
  * > You can use this whenever the stream disconnects for any reason in order to reconnect.
  *
@@ -93,11 +94,16 @@ export {}
  * > Calling this multiple times using the same `resource` string will not
  * > create multiple streams, instead the same stream will be reused for all exposed
  * > events on the given `resource`.
- * @typedef SourceConfiguration
- * @property {import('./types.external').EventListener} [close] Do something whenever the connection closes.
- * @property {import('./types.external').EventListener} [open] Do something whenever the connection opens.
- * @property {import('./types.external').EventListener} [error] Do something whenever there are errors.
- * @property {import("./types.external").FetchEventSourceInit} [options] Options for the underlying http request.
+ * @typedef Options
+ * @property {EventListener} [onclose] Do something whenever the connection closes.
+ * @property {EventListener} [onopen] Do something whenever the connection opens.
+ * @property {EventListener} [onerror] Do something whenever there are errors.
+ * @property {EventListener} [onmessage] Do something whenever a message is received.
+ * @property {AbortSignal} [signal]
+ * @property {string} [method]
+ * @property {any} [body]
+ * @property {Record<string,string>} [headers]
+ * @property {boolean} [openWhenHidden]
  * @property {boolean} [cache] Wether or not to cache connections, defaults to `true`.
  * > **Note**\
  * > Connections are cached based on `from` and `options`.\
@@ -190,22 +196,9 @@ export {}
 // fetchEventSource.
 
 /**
- * @typedef FetchEventSourceMessage
+ * @typedef Message
  * @property {string} id
  * @property {string} event
  * @property {string} data
  * @property {number} [retry]
- */
-
-/**
- * @typedef FetchEventSourceInit
- * @property {AbortSignal} [signal]
- * @property {string} [method]
- * @property {any} [body]
- * @property {Record<string,string>} [headers]
- * @property {function(Response):void} [onopen]
- * @property {function(FetchEventSourceMessage):void} [onmessage]
- * @property {function():void} [onclose]
- * @property {function(Error):void} [onerror]
- * @property {boolean} [openWhenHidden]
  */

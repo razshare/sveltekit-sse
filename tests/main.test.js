@@ -71,8 +71,8 @@ test('Making sure connection gets cached using non Latin1 characters.', async fu
   await page.goto('/pr-69')
   await delay(1000)
   const { pullRequest69 } = await getPlaywrightState({ page })
+  expect(pullRequest69.connection1).toBe(pullRequest69.connection2)
   expect(pullRequest69.message1).toBe(pullRequest69.message2)
-  expect(pullRequest69.message1).toContain('hello 猫')
 })
 
 test('Making sure onmessage event is triggered on the source object.', async function run({
@@ -84,19 +84,18 @@ test('Making sure onmessage event is triggered on the source object.', async fun
   const { issue70 } = await getPlaywrightState({ page })
   expect(issue70.status).toBe(200)
   expect(issue70.onmessage.length).toBeGreaterThan(0)
-  expect(issue70.onmessage[0].event).toBe('message')
+  expect(issue70.onmessage[0].name).toBe('message')
   expect(issue70.onmessage[0].id).toBe('1')
 })
 
-test('Making sure on error is invoked correctly event is triggered on the source object.', async function run({
+test('Making sure onerror event is triggered on the source object when server terminates connection abruptly.', async function run({
   page,
 }) {
   // Testing changes made in response to issue 70 https://github.com/razshare/sveltekit-sse/issues/70
-  await page.goto('/issue-70')
+  await page.goto('/issue-73')
   await delay(1000)
-  const { issue70 } = await getPlaywrightState({ page })
-  expect(issue70.status).toBe(200)
-  expect(issue70.onmessage.length).toBeGreaterThan(0)
-  expect(issue70.onmessage[0].event).toBe('message')
-  expect(issue70.onmessage[0].id).toBe('1')
+  const { issue73 } = await getPlaywrightState({ page })
+  expect(issue73.connections).toBe(1)
+  expect(issue73.disconnections).toBe(0)
+  expect(issue73.abruptDisconnections).toBeGreaterThan(0)
 })

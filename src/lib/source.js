@@ -1,6 +1,6 @@
 import { derived, readable } from 'svelte/store'
-import { consume } from './consume'
 import { IS_BROWSER } from './constants'
+import { consume } from './consume'
 
 /**
  * @type {Map<string, import('./types.external').Source>}
@@ -8,10 +8,11 @@ import { IS_BROWSER } from './constants'
 const cachedSources = new Map()
 
 /**
- * @param {import('./types.internal').ConnectablePayload} payload
+ * @param {string} resource
+ * @param {import('./types.external').Options} [options]
  * @returns {import('./types.internal').Connectable}
  */
-function connectable({ resource, options, onClose, onError, onOpen }) {
+function connectable(resource, options = {}) {
   let terminate = function noop() {}
 
   const store = readable(
@@ -21,14 +22,14 @@ function connectable({ resource, options, onClose, onError, onOpen }) {
      * @returns
      */
     function start(set) {
-      const consumedStream = consume({
-        resource,
-        options,
-        onClose,
-        onOpen,
-        onError,
-        onMessage(e) {
-          set({ id: e.id, event: e.event, data: e.data })
+      const consumedStream = consume(resource, {
+        ...options,
+        onmessage(event) {
+          const { id, name, data } = event
+          if (options.onmessage) {
+            options.onmessage(event)
+          }
+          set({ id, eventName: name, data })
         },
       })
 
@@ -71,13 +72,10 @@ function connectable({ resource, options, onClose, onError, onOpen }) {
  * > })
  * > ```
  * @param {string} from Path to the stream.
- * @param {import('./types.external').SourceConfiguration} [configuration]
+ * @param {import('./types.external').Options} [options]
  * @returns {import('./types.external').Source}
  */
-export function source(
-  from,
-  { error, close, open, cache = true, options = {} } = {},
-) {
+export function source(from, options = {}) {
   if (!IS_BROWSER) {
     return {
       close() {},
@@ -112,6 +110,9 @@ export function source(
     }
   }
 
+  // we're doing this because we want to cache
+  // connections by default, unless specified otherwise using `cache: false`
+  let cache = options.cache ?? true
   let key = ''
   if (cache) {
     key = btoa(encodeURIComponent(JSON.stringify({ from, options })))
@@ -121,25 +122,7 @@ export function source(
     }
   }
 
-  const connected = connectable({
-    resource: from,
-    options,
-    onClose(e) {
-      if (close) {
-        close(e)
-      }
-    },
-    onOpen(e) {
-      if (open) {
-        open(e)
-      }
-    },
-    onError(e) {
-      if (error) {
-        error(e)
-      }
-    },
-  })
+  const connected = connectable(from, options)
 
   /** @type {Map<string,import('svelte/store').Readable<string>>} */
   // @ts-ignore
@@ -166,7 +149,7 @@ export function source(
       if (!storeLocalsCache.has(eventName)) {
         const storeLocal = readable('', function start(set) {
           const unsubscribe = connected.subscribe(function watch(value) {
-            if (value && value.event === eventName) {
+            if (value && value.eventName === eventName) {
               set(value.data)
             }
           })
@@ -215,7 +198,7 @@ export function source(
           let initialValue = null
           return readable(initialValue, function start(set) {
             const unsubscribe = connected.subscribe(function watch(value) {
-              if (value && value.event === eventName) {
+              if (value && value.eventName === eventName) {
                 const valueLocal = transformer(value.data)
                 // @ts-ignore
                 set(valueLocal)

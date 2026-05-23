@@ -184,9 +184,9 @@ You can reconnect to the stream whenever the stream closes
   import { source } from 'sveltekit-sse'
 
   const connection = source('/custom-event', {
-    close({ connect }) {
-      console.log('reconnecting...')
-      connect()
+    async onclose({ connect }) {
+      console.log('reconnecting with a delay...')
+      setTimeout(connect, 1000)
     },
   })
 
@@ -209,10 +209,8 @@ You can apply custom headers to the request
   import { source } from 'sveltekit-sse'
 
   const connection = source('/event', {
-    options: {
-      headers: {
-        Authorization: 'Bearer ...',
-      },
+    headers: {
+      Authorization: 'Bearer ...',
     },
   })
 

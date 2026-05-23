@@ -5,7 +5,7 @@ export function load({ url }) {
 
   const connection = source(`/events?${searchParams}`, {
     cache: false,
-    close({ status, connect, isLocal }) {
+    onclose({ status, connect, isLocal }) {
       if (isLocal) {
         return
       }
@@ -13,7 +13,7 @@ export function load({ url }) {
       console.log('reconnecting...')
       connect()
     },
-    open({ status, isLocal }) {
+    onopen({ status, isLocal }) {
       console.log('Opened', { status, isLocal })
     },
   })
