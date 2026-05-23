@@ -62,13 +62,10 @@ function connectable(resource, options = {}) {
  * Multiple sources may share the same underlying connection if they use the same path (`from`) and the same options (`options`).
  * > ## Example
  * > ```js
- * > const connection = source({
- * >  from: '/events',
- * >  options: {
- * >    headers: {
- * >      'Authorization': `Bearer ${token}`
- * >    }
- * >  }
+ * > const connection = source('/events', {
+ * >   headers: {
+ * >     'Authorization': `Bearer ${token}`
+ * >   }
  * > })
  * > ```
  * @param {string} from Path to the stream.
